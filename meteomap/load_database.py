@@ -1,6 +1,8 @@
 """ This script cleans the data we got from dbpedia and inserts it in the
     database
 """
+# TODO make this thing count how many times each filter has been used
+# this would help verify that nothing is broken
 import sys, pickle, datetime, re
 from pprint import pprint
 from numpy import mean
@@ -177,7 +179,9 @@ ELEVATION_KEYS = [
     ((PROPERTY + 'elevationImperial',), feet2meter),
     ((PROPERTY + 'elevationMaxFt', PROPERTY + 'elevationMinFt'), feet2meter),
     ((PROPERTY + 'elevationMaxFt', PROPERTY + 'elevationMinFt'), feet2meter),
-    (PROPERTY, 'highestElevationImperial') # FIXME
+    ((PROPERTY + 'highestElevationImperial',
+      PROPERTY + 'lowestElevationImperial'), feet2meter),
+    ((PROPERTY + 'highestElevationImperial',), feet2meter),
 ]
 
 
@@ -228,15 +232,22 @@ def get_population(city_data):
 def get_month_stats(city_data):
     months = ['{:%b}'.format(datetime.datetime(2000, i+1, 1)).lower()
               for i in range(12)]
-    mapping = {'avgHigh': ['HighC', 'High', (('HighF',), f2c)],
-               'avgLow': ['LowC', 'Low', (('LowF',), f2c)],
+
+    # Prom, Min, Max, Precip and
+    # PrecipDías(PrecipD%C3%ADas) where found for the city
+    # Viña del Mar... I don't like those very much: they are not very
+    # consistent
+    mapping = {'avgHigh': ['HighC', 'High', (('HighF',), f2c), 'Prom'],
+               'avgLow': ['LowC', 'Low', (('LowF',), f2c), 'Min'],
                'highHumidex': ['HighHumidex', 'MaximumHumidex'],
                'chill': ['Chill'],
                'dailyMean' : ['MeanC', (('MeanF',), f2c), 'DailyMean'],
                'sun': ['Sun', 'dSun', 'Sol'],
                'percentSun': ['Percentsun'],
-               'recordHigh': ['RecHigh', 'RecordHighC', (('RecordHighF',), f2c)],
-               'recordLow': ['RecLow', 'RecordLowC', (('RecordLowF',), f2c)],
+               'recordHigh': ['RecHigh', 'RecordHighC', (('RecordHighF',), f2c),
+                              'Max'],
+               'recordLow': ['RecLow', 'RecordLowC', (('RecordLowF',), f2c),
+                             'MinReg'],
                'rain': ['RainMm',
                         (('RainCm',), lambda x: x*10.),
                         (('RainInch',), inch2mm)],
@@ -247,11 +258,11 @@ def get_month_stats(city_data):
                'precipitation': ['PrecipitationMm',
                                  (('PrecipitationCm',), lambda x: x*10.),
                                  (('PrecipitationInch',), inch2mm),
-                                 'Mm'],
+                                 'Mm', 'Precip'],
                'rainDays': ['RainDays', 'RanDays'],
                'snowDays': ['SnowDays'],
-               'precipitationDays': ['PrecipitationDays'],
-               'humidity': ['Humidity']}
+               'precipitationDays': ['PrecipitationDays', 'PrecipD%C3%ADas'],
+               'humidity': ['Humidity', 'Hum']}
 
     month_stats = {m:{} for m in months}
     for month in months:
