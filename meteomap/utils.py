@@ -2,10 +2,11 @@ from datetime import datetime, timedelta
 import math, gzip, io
 
 class Timer(object):
-    def __init__(self, nb_total, dont_print_before=0, print_if=None):
+    def __init__(self, nb_total, dont_print_before=1, print_if=None):
         self.nb_total = nb_total
         self.min_print = dont_print_before
         self.start = datetime.utcnow()
+        self.nb_done = 0
 
         if print_if is None:
             def f(nb_done):
@@ -15,8 +16,15 @@ class Timer(object):
             print_if = f
         self.print_if = print_if
 
-    def update(self, nb_done):
-        if nb_done > self.min_print and self.print_if(nb_done):
+    def update(self, nb_done=None):
+        """ if nb_done is None, we will assume we did one more """
+        if nb_done is None:
+            self.nb_done += 1
+            nb_done = self.nb_done
+        else:
+            self.nb_done = nb_done
+
+        if nb_done >= self.min_print and self.print_if(nb_done):
             delta = datetime.utcnow() - self.start
             speed = 1. * nb_done /delta.total_seconds()
             print('done {} out of {} in {} @ {:0.2f}/s eta {}s'.format(

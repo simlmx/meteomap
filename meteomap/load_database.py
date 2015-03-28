@@ -6,7 +6,7 @@
 import sys, pickle, datetime, re
 from pprint import pprint
 from numpy import mean
-from meteomap.utils import open
+from meteomap.utils import open, Timer
 
 PROPERTY = 'http://dbpedia.org/property/'
 ONTOLOGY = 'http://dbpedia.org/ontology/'
@@ -128,7 +128,7 @@ class KeysParsingRule(object):
             agg1 = [self.agg(x) for x in values]
             agg2 = self.agg(agg1)
             # I'm rounding to the nearest unit, is that wise?
-            return round(agg2)
+            return round(agg2,1)
 
     def clear_keys_in(self, data):
         """ Clear our self.keys in data
@@ -292,6 +292,7 @@ if __name__ == '__main__':
     # city_data = {'http://dbpedia.org/resource/Surakarta': city_data['http://dbpedia.org/resource/Surakarta']}
     filtered_cities = {}
     not_found = []
+    timer = Timer(len(city_data), 100)
     for city, data in city_data.items():
         filtered_city = {}
         name = city.split('/')[-1]
@@ -334,10 +335,9 @@ if __name__ == '__main__':
 
         if filtered_city['population'] is not None \
                 and len(filtered_city['month_stats']['jan']) > 0:
-            print('YAY')
             filtered_cities[name] = filtered_city
-            print(name)
-            pprint(filtered_city)
+            # print(name)
+            # pprint(filtered_city)
 
         if len(data) > 0:
             print(name)
@@ -347,6 +347,7 @@ if __name__ == '__main__':
                 not_found.append(k)
             pprint(data)
             assert False
+        timer.update()
 
     for k in not_found:
         sp = k.split('/')
