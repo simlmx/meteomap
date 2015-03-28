@@ -1,4 +1,11 @@
 *~
 *.swp
 *.pyc
+
 /config.json
+/tmp
+/mm-ve
+
+.ropeproject
+/meteomap.egg-info
+
