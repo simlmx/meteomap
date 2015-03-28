@@ -1,0 +1,9 @@
+{
+    "db": {
+        "name": "meteomap",
+        "user": "you db user",
+        "password": "your db password",
+        "host": "db host",
+        "port": "db port"
+    }
+}
