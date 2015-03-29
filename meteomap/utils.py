@@ -36,3 +36,15 @@ def open(filename, *args, **kwargs):
         return gzip.open(filename, *args, **kwargs)
     else:
         return io.open(filename, *args, **kwargs)
+
+def ask_before_overwrite(filename):
+    """ if `filename` already exists, will prompt before overwriting """
+    if os.path.exists(filename):
+        while True:
+            choice = raw_input(u"The file {} already exists. Overwrite? (Y/N)".format(filename))
+            if choice == 'Y':
+                return True
+            elif choice == 'N':
+                return False
+    else:
+        return True

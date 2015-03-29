@@ -6,7 +6,7 @@
 import sys, pickle, datetime, re
 from pprint import pprint
 from numpy import mean
-from meteomap.utils import open, Timer
+from meteomap.utils import open, Timer, ask_before_overwrite
 
 PROPERTY = 'http://dbpedia.org/property/'
 ONTOLOGY = 'http://dbpedia.org/ontology/'
@@ -284,21 +284,20 @@ def get_month_stats(city_data):
 
 
 if __name__ == '__main__':
-    nb_no_elevation = 0
-    nb_no_pop = 0
-    nb_no_month_stats = 0
+
     # arg 1 : file to open
     city_data = pickle.load(open(sys.argv[1]))
-    # city_data = {'http://dbpedia.org/resource/Surakarta': city_data['http://dbpedia.org/resource/Surakarta']}
+    # arg 2 : output dump
+    output = sys.argv[2]
+    if not ask_before_overwrite(output):
+        sys.exit()
+
     filtered_cities = {}
     not_found = []
     timer = Timer(len(city_data), 100)
     for city, data in city_data.items():
         filtered_city = {}
         name = city.split('/')[-1]
-        # latitude / longitude
-        filtered_city['lat'] = data.pop('lat')
-        filtered_city['long'] = data.pop('long')
 
         # remove keys we want to ignore
         for k in list(data.keys()):
@@ -312,25 +311,10 @@ if __name__ == '__main__':
                 # else:
                 #     print('  ', k, 'not match', regex.pattern)
 
-        # elevation
+        filtered_city['lat'] = data.pop('lat')
+        filtered_city['long'] = data.pop('long')
         filtered_city['elevation'] = get_elevation(data)
-        # if el is None:
-        #     nb_no_elevation += 1
-            # for k in data:
-            #     if 'elevation' in k.lower() or 'altitude' in k.lower():
-            #         print(city)
-            #         print('  ', k, data[k])
-
         filtered_city['population'] = get_population(data)
-        # if pop is None:
-        #     nb_no_pop += 1
-        #     for k in data:
-        #         if 'population' in k.lower() and \
-        #                 'populationasof' not in k.lower() and \
-        #                 'density' not in k.lower():
-        #             print(city)
-        #             print('  ', k, data[k])
-
         filtered_city['month_stats'] = get_month_stats(data)
 
         if filtered_city['population'] is not None \
@@ -346,7 +330,11 @@ if __name__ == '__main__':
             for k in data:
                 not_found.append(k)
             pprint(data)
+            # if you comment this assert, it will still print all the keys that
+            # weren't matched at the end. this is what you want to use for
+            # debugging
             assert False
+
         timer.update()
 
     for k in not_found:
@@ -358,6 +346,5 @@ if __name__ == '__main__':
         else:
             print("{} + '{}',".format(sp[-2].upper(), sp[-1]))
 
-    # print('no elevation', nb_no_elevation)
-    # print('no population', nb_no_pop)
-    # print('no month stats', nb_no_month_stats)
+    with open(output, 'w') as f:
+        pickle.dump(filtered_cities)

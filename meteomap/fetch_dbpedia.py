@@ -28,10 +28,6 @@ def query(sparql, q, limit=None, batch=1000):
     return
 
 
-
-
-
-
 if __name__ == '__main__':
     #arg 1 : file to dump the data to
     output = sys.argv[1]
@@ -123,14 +119,14 @@ if __name__ == '__main__':
             # same for &minus;1.6'-> -1.6
             # remove the ugly code to fix those in the load_database.py code
             # when this is fixed
+            # See the "replace" bit in load_database.py, that's where it's
+            # being done in the meantime
 
             cities_dict[city][att].append(val)
 
         timer.update(i)
 
-    f = open(output, 'w')
-    try:
+    with open(output, 'w') as f:
         pickle.dump(dict(cities_dict), f)
-    finally:
-        f.close()
+
     pprint(cities_dict)
