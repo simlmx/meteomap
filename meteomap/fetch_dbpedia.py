@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     timer = Timer(len(cities))
 
-    for i,city in enumerate(cities_dict.keys()):
+    for city in cities_dict.keys():
         # get the properties of the city
         results = query(sparql,
             """
@@ -124,9 +124,9 @@ if __name__ == '__main__':
 
             cities_dict[city][att].append(val)
 
-        timer.update(i)
+        timer.update()
+
+    # pprint(cities_dict)
 
     with open(output, 'w') as f:
         pickle.dump(dict(cities_dict), f)
-
-    pprint(cities_dict)

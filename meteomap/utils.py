@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import math, gzip, io
+import math, gzip, io, os
 
 class Timer(object):
     def __init__(self, nb_total, dont_print_before=1, print_if=None):
@@ -41,7 +41,7 @@ def ask_before_overwrite(filename):
     """ if `filename` already exists, will prompt before overwriting """
     if os.path.exists(filename):
         while True:
-            choice = raw_input(u"The file {} already exists. Overwrite? (Y/N)".format(filename))
+            choice = input(u"The file {} already exists. Overwrite? (Y/N)".format(filename))
             if choice == 'Y':
                 return True
             elif choice == 'N':

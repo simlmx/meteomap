@@ -347,4 +347,4 @@ if __name__ == '__main__':
             print("{} + '{}',".format(sp[-2].upper(), sp[-1]))
 
     with open(output, 'w') as f:
-        pickle.dump(filtered_cities)
+        pickle.dump(filtered_cities, f)
