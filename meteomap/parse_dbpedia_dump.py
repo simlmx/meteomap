@@ -5,6 +5,7 @@
 # this would help verify that nothing is broken
 import sys, pickle, datetime, re
 from pprint import pprint
+from collections import Counter
 from numpy import mean
 from meteomap.utils import open, Timer, ask_before_overwrite
 
@@ -82,9 +83,6 @@ def inch2mm(i):
 def inch2cm(i):
     return i * 2.54
 
-def nothing(x):
-    return x
-
 def f2c(f):
     """ fareneith to celcius """
     return (f - 32)/1.8
@@ -117,10 +115,8 @@ class KeysParsingRule(object):
         if not got_all_current_keys:
             return None
         else:
-            def str_parse(x):
-                return float(x.replace('−', '-').replace('&minus;', '-'))
             try:
-                values = [[str_parse(x) for x in y] for y in values]
+                values = [[float(x) for x in y] for y in values]
             except ValueError:
                 print('this should not happen often, right?')
                 return None
@@ -239,10 +235,10 @@ def get_month_stats(city_data):
     # consistent
     mapping = {'avgHigh': ['HighC', 'High', (('HighF',), f2c), 'Prom'],
                'avgLow': ['LowC', 'Low', (('LowF',), f2c), 'Min'],
-               'highHumidex': ['HighHumidex', 'MaximumHumidex'],
+               'humidex': ['HighHumidex', 'MaximumHumidex'],
                'chill': ['Chill'],
-               'dailyMean' : ['MeanC', (('MeanF',), f2c), 'DailyMean'],
-               'sun': ['Sun', 'dSun', 'Sol'],
+               'avg' : ['MeanC', (('MeanF',), f2c), 'DailyMean'],
+               'sunHours': ['Sun', 'dSun', 'Sol'],
                'percentSun': ['Percentsun'],
                'recordHigh': ['RecHigh', 'RecordHighC', (('RecordHighF',), f2c),
                               'Max'],
@@ -280,6 +276,23 @@ def get_month_stats(city_data):
             value = get_generic(city_data, kprs)
             if value is not None:
                 month_stats[month][k] = value
+
+    # some fields deduction
+    for month in months:
+        stats = month_stats[month]
+        if 'precipitation' not in stats and 'rain' in stats:
+            prec = stats['rain']
+            if 'snow' in stats:
+                prec += stats['snow'] # * 10 mm/cm / 10 times (compression)
+            stats['precipitation'] = prec
+        if 'precipitationDays' not in stats and 'rainDays' in stats:
+            rainDays = stats['rainDays']
+            if 'snowDays' in stats:
+                print('summing rain and snow days, makes sense? what about days'
+                      ' with rain AND snow?')
+                rainDays += stats['snowDays']
+            stats['precipitationDays'] = rainDays
+
     return month_stats
 
 
@@ -311,8 +324,8 @@ if __name__ == '__main__':
                 # else:
                 #     print('  ', k, 'not match', regex.pattern)
 
-        filtered_city['lat'] = data.pop('lat')
-        filtered_city['long'] = data.pop('long')
+        filtered_city['lat'] = float(data.pop('lat'))
+        filtered_city['long'] = float(data.pop('long'))
         filtered_city['elevation'] = get_elevation(data)
         filtered_city['population'] = get_population(data)
         filtered_city['month_stats'] = get_month_stats(data)
@@ -348,3 +361,10 @@ if __name__ == '__main__':
 
     with open(output, 'w') as f:
         pickle.dump(filtered_cities, f)
+
+    # some stats
+    counter = Counter()
+    for name, stats in filtered_cities.items():
+        for k in stats['month_stats']['jan']:
+            counter[k] += 1
+    print(counter.most_common())

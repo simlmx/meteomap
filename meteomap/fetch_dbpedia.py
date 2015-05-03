@@ -1,11 +1,12 @@
-import sys, gzip, pickle
+import sys, gzip, pickle, argparse, time
+from urllib.error import URLError
 from pprint import pprint
 from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
-from meteomap.utils import Timer, open
+from meteomap.utils import Timer, open, ask_before_overwrite
 
 
-def query(sparql, q, limit=None, batch=1000):
+def sparql_query(sparql, q, limit=None, batch=1000):
     """
         will do several LIMIT `batch` OFFSET X calls
         assuming sparql.setReturnFormat(JSON) has been called
@@ -16,7 +17,11 @@ def query(sparql, q, limit=None, batch=1000):
     returned = 0
     while True:
         sparql.setQuery(q + ' LIMIT {} OFFSET {}'.format(batch, i*batch))
-        results = sparql.query().convert()['results']['bindings']
+        try:
+            results = sparql.query().convert()['results']['bindings']
+        except URLError as e:
+            print(e)
+            time.sleep(.5)
         for r in results:
             yield r
             returned += 1
@@ -28,9 +33,17 @@ def query(sparql, q, limit=None, batch=1000):
     return
 
 
+def clean_minuses(x):
+    return x.replace('−', '-').replace('&minus;', '-')
+
+
 if __name__ == '__main__':
-    #arg 1 : file to dump the data to
-    output = sys.argv[1]
+    parser = argparse.ArgumentParser(description='fetch the data from dbpedia')
+    parser.add_argument('output_file', help='file where to dump the data')
+    args = parser.parse_args()
+    output = args.output_file
+    if not ask_before_overwrite(output):
+        sys.exit()
 
     sparql = SPARQLWrapper('http://dbpedia.org/sparql')
     sparql.setReturnFormat(JSON)
@@ -51,7 +64,7 @@ if __name__ == '__main__':
     # print('Expecting', nb_cities, 'cities')
 
     print('getting all the cities')
-    cities = list(query(sparql,
+    cities = list(sparql_query(sparql,
         """
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -81,7 +94,7 @@ if __name__ == '__main__':
 
     for city in cities_dict.keys():
         # get the properties of the city
-        results = query(sparql,
+        results = sparql_query(sparql,
             """
             PREFIX dbo: <http://dbpedia.org/ontology/>
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -112,16 +125,8 @@ if __name__ == '__main__':
         for c in results:
             att = c['p']['value']
             val = c['o']['value']
-            #FIXME
-            raise NotImplementedError('replace the weird "−" with a real "-"'
-                                      'so that we can easily parse the negative'
-                                      'numbers later')
-            # same for &minus;1.6'-> -1.6
-            # remove the ugly code to fix those in the load_database.py code
-            # when this is fixed
-            # See the "replace" bit in load_database.py, that's where it's
-            # being done in the meantime
-
+            # some negative values are weird
+            val = clean_minuses(val)
             cities_dict[city][att].append(val)
 
         timer.update()
