@@ -3,6 +3,7 @@ prerequisites
 
 postgresql database running
 
+
 install
 =======
 
@@ -19,3 +20,19 @@ install
     
     # configure
     cp config_sample.json config.json # and edit config.json
+
+
+database creation and population
+================================
+
+    # fetch the data
+    python meteomap/fetch_dbpedia.py tmp/dbpedia_dump.gz
+
+    # parse the dbpedia data
+    python meteomap/parse_dbpedia_dump.py tmp/dbpedia_dump.gz tmp/parsed_dump.gz
+
+    # create the database
+    python meteomap/create_database.py
+
+    # insert the data in the database
+    python meteomap/load_database.py tmp/parsed_dump.gz
