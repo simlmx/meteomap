@@ -15,8 +15,8 @@ postgres_database = '{}://{}:{}@{}{}/postgres'.format(
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='create the database')
     parser.add_argument('--drop', action='store_true', help='use this arguemnt'
-                       'to DROP an already existing database before creating'
-                       'it')
+                       ' to DROP an already existing database before creating'
+                       ' it')
     args = parser.parse_args()
 
     engine = create_engine(postgres_database)

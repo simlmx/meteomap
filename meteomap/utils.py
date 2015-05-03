@@ -1,5 +1,10 @@
-from datetime import datetime, timedelta
 import math, gzip, io, os
+from datetime import datetime, timedelta
+from contextlib import contextmanager
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from meteomap.settings import DATABASE_STR
+
 
 class Timer(object):
     def __init__(self, nb_total, dont_print_before=1, print_if=None):
@@ -31,20 +36,48 @@ class Timer(object):
                 nb_done, self.nb_total, delta, speed,
                 timedelta(seconds=(self.nb_total - nb_done) / speed)))
 
+
 def open(filename, *args, **kwargs):
     if filename.endswith('.gz'):
         return gzip.open(filename, *args, **kwargs)
     else:
         return io.open(filename, *args, **kwargs)
 
+
 def ask_before_overwrite(filename):
     """ if `filename` already exists, will prompt before overwriting """
     if os.path.exists(filename):
         while True:
-            choice = input(u"The file {} already exists. Overwrite? (Y/N)".format(filename))
+            choice = input(u'The file {} already exists. Overwrite? (Y/N) '.format(filename))
             if choice == 'Y':
                 return True
             elif choice == 'N':
                 return False
     else:
         return True
+
+
+def init_session(verbose=False):
+    engine = create_engine(DATABASE_STR, echo=verbose)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    return session
+
+
+@contextmanager
+def session_scope(dryrun=False):
+    """Provide a transactional scope around a series of operations."""
+    session = init_session()
+    try:
+        yield session
+        if dryrun:
+            print('would add %i new objects, modify %i and delete %i' %
+                  session.new, session.dirty, session.deleted)
+            session.rollback()
+        else:
+            session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
