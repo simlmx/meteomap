@@ -7,7 +7,7 @@ from meteomap.settings import DATABASE_STR
 
 
 class Timer(object):
-    def __init__(self, nb_total, dont_print_before=1, print_if=None):
+    def __init__(self, nb_total=None, dont_print_before=1, print_if=None):
         self.nb_total = nb_total
         self.min_print = dont_print_before
         self.start = datetime.utcnow()
@@ -32,9 +32,15 @@ class Timer(object):
         if nb_done >= self.min_print and self.print_if(nb_done):
             delta = datetime.utcnow() - self.start
             speed = 1. * nb_done /delta.total_seconds()
-            print('done {} out of {} in {} @ {:0.2f}/s eta {}s'.format(
-                nb_done, self.nb_total, delta, speed,
-                timedelta(seconds=(self.nb_total - nb_done) / speed)))
+            # without a nb_total specified, there is not much we can tell
+            if self.nb_total is None:
+                print('done {} in {} @ {:0.2f}/s'.format(
+                    nb_done, delta, speed))
+            # with a nb_total specified, we can have more stats (like an ETA)
+            else:
+                print('done {} out of {} in {} @ {:0.2f}/s eta {}s'.format(
+                    nb_done, self.nb_total, delta, speed,
+                    timedelta(seconds=(self.nb_total - nb_done) / speed)))
 
 
 def open(filename, *args, **kwargs):
