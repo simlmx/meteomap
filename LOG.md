@@ -65,3 +65,37 @@ peut-être le plus simple... Il y aura pas tant de cas étant donné que le
 template Weather Box fait tjrs la même chose. Tout ce qui a l'air de changer
 ce sont les unités de mesure? (F vs C par exemple)...
 
+5 mai 2015
+===========
+Parser l'HTML directement semble assez simple (quoi que lent, 5-10 secondes par
+ville). Il va rester à voir ce qui est mieux pour trouver toutes les villes
+(dbpedia ou un truc du genre API wikipedia directement). Ensuite je risque de
+devoir filter les villes (par exemple sur leur population) pour pas aller chercher
+la meteo de trop de villes pour rien, pcq lent. 
+
+À faire pour la prochaine fois : pe faire le ménage de dbpedia_experimentation.py
+si ça se trouve tout ce qui est pertinent est dans fetch_dbpedia.py. Ensuite
+Remplacer les morceaux par le parsing wikipedia et essayer ça? Peut-être utiliser
+dbo:Settlement à la place de City et ça va tout régler...?
+
+
+11 mai
+========
+commencé à coder rapidement la nouvelle version pour pogner la meteo. voir fichier
+add_wiki_data_to_dump.py
+
+
+7 juin
+======
+j'avance le code, je l'ai roulé avec toutes les "Settlements" qui ont au moins
+1M habitants (ça en fait environ 2600). ÇA va être déjà ça pour tester.
+Rester à vérifier que le parser fait tout ça comme il faut (il y a encore des
+blobs météos qu'on ne supporte pas ou des trucs qu'il ne parse pas etc.)
+
+
+9 juin
+=======
+je semble être capable d'ajouter les données venant de wikipedia (la météo)
+directement (et non pas dbpedia) à partir de mes 2600 Settlements. Reste à
+vérifier si on a bien toutes les villes de 1M d'habitants et plus ou si qqch
+manque au passage...
