@@ -13,10 +13,10 @@ def sparql_query(sparql, q, limit=None, batch=1000):
     """
     if limit is not None and limit < batch:
         batch = limit
-    i = 0
-    returned = 0
+    i_batch = 0
+    nb_returned = 0
     while True:
-        sparql.setQuery(q + ' LIMIT {} OFFSET {}'.format(batch, i*batch))
+        sparql.setQuery(q + ' LIMIT {} OFFSET {}'.format(batch, i_batch*batch))
         try:
             results = sparql.query().convert()['results']['bindings']
         except URLError as e:
@@ -24,12 +24,12 @@ def sparql_query(sparql, q, limit=None, batch=1000):
             time.sleep(.5)
         for r in results:
             yield r
-            returned += 1
-            if limit is not None and returned >= limit:
+            nb_returned += 1
+            if limit is not None and nb_returned >= limit:
                 return
         if len(results) == 0:
             break
-        i+=1
+        i_batch += 1
     return
 
 
@@ -40,6 +40,7 @@ def clean_minuses(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='fetch the data from dbpedia')
     parser.add_argument('output_file', help='file where to dump the data')
+    parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
     output = args.output_file
     if not ask_before_overwrite(output):
@@ -69,14 +70,26 @@ if __name__ == '__main__':
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
 
-        SELECT ?city AVG(?lat) as ?lat AVG(?long) as ?long
+        SELECT ?city
+               AVG(?lat) as ?lat AVG(?long) as ?long
+               MIN(?source) as ?source
+               MAX(?pop) as ?maxpop
+
         WHERE {
-          ?city a dbo:City.
+          ?city a dbo:Settlement.
           ?city geo:lat ?lat.
-          ?city geo:long ?long. }
+          ?city geo:long ?long.
+          ?city prov:wasDerivedFrom ?source.
+          ?city ?p ?pop.
+          FILTER(regex(?p, "population", "i") &&
+                 isNumeric(?pop))
+        }
         GROUP BY $city
-        """, limit=1e9))
+        HAVING(MAX(?pop) > 1000000)
+
+        """, limit=args.max_cities))
     print('got', len(cities))
 
     def f():
@@ -85,10 +98,8 @@ if __name__ == '__main__':
 
     for c in cities:
         city = c['city']['value']
-        lat = c['lat']['value']
-        lon = c['long']['value']
-        cities_dict[city]['lat'] = lat
-        cities_dict[city]['long'] = lon
+        for k in c.keys():
+            cities_dict[city][k] = c[k]['value']
 
     timer = Timer(len(cities))
 
@@ -104,21 +115,8 @@ if __name__ == '__main__':
             WHERE {{
                 <{}> ?p ?o.
                 FILTER(
-                    (regex(?p, "population", "i") ||
-                        regex(?p, "elevation", "i") ||
-                        regex(?p, "/jan.+") ||
-                        regex(?p, "/feb.+") ||
-                        regex(?p, "/mar.+") ||
-                        regex(?p, "/apr.+") ||
-                        regex(?p, "/may.+") ||
-                        regex(?p, "/jun.+") ||
-                        regex(?p, "/jul.+") ||
-                        regex(?p, "/aug.+") ||
-                        regex(?p, "/sep.+") ||
-                        regex(?p, "/oct.+") ||
-                        regex(?p, "/nov.+") ||
-                        regex(?p, "/dec.+"))
-                )
+                    regex(?p, "population", "i"))
+                    # || regex(?p, "elevation", "i"))
             }}
             """.format(city))
 
