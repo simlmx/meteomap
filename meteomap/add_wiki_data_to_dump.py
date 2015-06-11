@@ -10,7 +10,11 @@ logger = logging.getLogger(__name__)
 
 def get_first_number(x):
     try:
-        return float(re.search('^[\d.-]+', x).group())
+        if x == 'trace' or x == '-':
+            return 0.
+        match = re.search('^([\d,.-]+)[\s]*[(][^)]*[)]', x).group(1)
+        match = match.replace(',', '')
+        return float(match)
     except Exception:
         logger.warning('not able to parse "%s", returning 0.', x)
     return 0.
@@ -19,7 +23,10 @@ def get_first_number(x):
 def get_second_number(x):
     """ actually gets the number in the parentheses """
     try:
-        match = re.search('[(][\d.-]+[)]', x).group()
+        if x == 'trace' or x == '-':
+            return 0.
+        match = re.search('[(][\d,.-]+[)]', x).group()
+        match = match.replace(',', '')  # comma for thousands
         return float(match[1:-1])
     except Exception:
         logger.warning('not able to parse "%s", returning 0.', x)
@@ -43,23 +50,16 @@ ROW_PARSERS = {
     # bit stupid...
     'mean daily sunshine hours': ('dailySunHours', float),
 
-    'avg precipitation days (≥  mm)': ('precipitationDays', float),
-    'avg precipitation days (≥  in)': ('precipitationDays', float),
     'avg precipitation days': ('precipitationDays', float),
     'avg precipitation mm (inches)': ('precipitation', get_first_number),
     'avg precipitation inches (mm)': ('precipitation', get_second_number),
     'avg precipitation cm (inches)': ('precipitation',
                                         lambda x: get_second_number(x) * 100.),
 
-    'avg rainy days (≥  mm)': ('rainDays', float),
-    'avg rainy days (≥  in)': ('rainDays', float),
-    'avg rainy days (≥ ≥  mm)': ('rainDays', float),
     'avg rainy days': ('rainDays', float),
     'avg rainfall mm (inches)' : ('rain', get_first_number),
     'avg rainfall inches (mm)' : ('rain', get_second_number),
 
-    'avg snowy days (≥  in)': ('snowDays', float),
-    'avg snowy days (≥  cm)': ('snowDays', float),
     'avg snowy days': ('snowDays', float),
     'avg snowfall cm (inches)': ('snow', get_first_number),
     'avg snowfall inches (cm)': ('snow', get_second_number),
@@ -116,7 +116,9 @@ def parse_climate_table(html):
         title = ths[0].get_text().strip()
         if title == 'Month':
             continue
-        data[title] = [ths[i].get_text().strip().replace('−', '-').replace(',', '.') for i in range(1,13)]
+        data[title] = [ths[i].get_text().strip()
+                             .replace('−', '-').replace('—', '-')
+                       for i in range(1,13)]
     return data
 
 
@@ -128,6 +130,8 @@ def parse_data(climate_data):
         title = title.replace('.', '') \
                      .replace('average', 'avg') \
                      .replace(' ', ' ')  # weird space to normal space
+        regex = re.compile(' days [(].*[)]')
+        title = regex.sub(' days', title)
 
         try:
             key, parse_fn = ROW_PARSERS[title]
@@ -164,7 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
 
-    configure_logging('INFO')
+    configure_logging()
 
     dump_in = pickle.load(open(args.input_file))
 
