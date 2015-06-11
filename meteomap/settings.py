@@ -19,3 +19,5 @@ DATABASE_STR = '{}://{}:{}@{}{}/{}'.format(
     DATABASE['host'],
     ':' + DATABASE['port'] if DATABASE['port'] != '' else '',
     DATABASE['name'])
+
+LOGGING_CONFIG = config['logging']

@@ -99,3 +99,9 @@ je semble être capable d'ajouter les données venant de wikipedia (la météo)
 directement (et non pas dbpedia) à partir de mes 2600 Settlements. Reste à
 vérifier si on a bien toutes les villes de 1M d'habitants et plus ou si qqch
 manque au passage...
+Il y a tjrs quelques cas que je ne parse pas comme il faut dans le tableau du
+climat, voir les logs de add_wiki_data_to_dump.py
+
+10 juin
+========
+commencé à utiliser le logging python

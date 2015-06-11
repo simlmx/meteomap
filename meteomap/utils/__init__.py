@@ -1,9 +1,11 @@
-import math, gzip, io, os
+import math, gzip, io, os, logging, logging.config
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from meteomap.settings import DATABASE_STR
+from meteomap.settings import config, DATABASE_STR, LOGGING_CONFIG
+
+logger = logging.getLogger(__name__)
 
 
 class Timer(object):
@@ -34,11 +36,12 @@ class Timer(object):
             speed = 1. * nb_done /delta.total_seconds()
             # without a nb_total specified, there is not much we can tell
             if self.nb_total is None:
-                print('done {} in {} @ {:0.2f}/s'.format(
+                logger.info('done {} in {} @ {:0.2f}/s'.format(
                     nb_done, delta, speed))
             # with a nb_total specified, we can have more stats (like an ETA)
             else:
-                print('done {} out of {} in {} @ {:0.2f}/s eta {}s'.format(
+                logger.info(
+                    'done {} out of {} in {} @ {:0.2f}/s eta {}s'.format(
                     nb_done, self.nb_total, delta, speed,
                     timedelta(seconds=(self.nb_total - nb_done) / speed)))
 
@@ -87,3 +90,60 @@ def session_scope(dryrun=False):
         raise
     finally:
         session.close()
+
+
+def configure_logging(level=None):
+    """
+        level : overwrites the level in the config
+        everything >= `level` to console and rotating file
+        critial to email
+
+    """
+
+    if level is None:
+        level = LOGGING_CONFIG['level']
+    EMAIL = LOGGING_CONFIG['email']
+
+    common_logger_settings = {
+        'level': level,
+        'handlers': LOGGING_CONFIG["handlers"]
+    }
+
+    logging_config = {
+        'version': 1,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'default'
+            },
+            'file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': 'logs/logs.txt',
+                'formatter': 'default'
+            },
+            'email': {
+                'class':
+                'meteomap.utils.threaded_tls_smtp_handler.ThreadedTlsSMTPHandler',
+                'mailhost': (EMAIL['server'], EMAIL['port']),
+                'fromaddr': EMAIL['address'],
+                'toaddrs': [EMAIL['address']],
+                'subject': '%(levelname)s meteomap',
+                'credentials': (EMAIL['address'], EMAIL['pass']),
+                'level': 'ERROR',
+                'formatter': 'default'
+            }
+        },
+        'formatters': {
+            'default': {
+                'format': '%(asctime)s [%(levelname)s] %(message)s',
+                'datefmt': '%Y-%m-%d %H:%M:%S'
+            }
+        },
+        'loggers': {
+            '__main__': common_logger_settings,
+            'meteomap': common_logger_settings,
+        }
+    }
+
+    logging.config.dictConfig(logging_config)
+

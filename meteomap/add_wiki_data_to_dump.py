@@ -1,16 +1,18 @@
-import re, sys, pickle, argparse
+import re, sys, pickle, argparse, logging
 from urllib.parse import urlparse, quote
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
-from meteomap.utils import open, ask_before_overwrite, Timer
+from meteomap.utils import open, ask_before_overwrite, Timer, configure_logging
 from pprint import pprint
+
+logger = logging.getLogger(__name__)
 
 
 def get_first_number(x):
     try:
         return float(re.search('^[\d.-]+', x).group())
     except Exception:
-        print('not able to parse', x, '. returning 0.')
+        logger.warning('not able to parse "%s", returning 0.', x)
     return 0.
 
 
@@ -20,7 +22,7 @@ def get_second_number(x):
         match = re.search('[(][\d.-]+[)]', x).group()
         return float(match[1:-1])
     except Exception:
-        print('not able to parse', x, '. returning 0.')
+        logger.warning('not able to parse "%s", returning 0.', x)
     return 0.
 
 
@@ -104,16 +106,13 @@ def parse_climate_table(html):
         return None
 
     if len(months) > 1:
-        print('warning, more than one matching table... taking the first')
+        logger.info('more than one matching table in html, using the first one')
     table = months[0].parent.parent
-    # print(table)
     data = {}
     for tr in table.find_all('tr'):
         ths = tr.find_all(['th','td'])
         if len(ths) != 1 + 12 + 1:
             continue
-        # print('--------------')
-        # print(ths[0].get_text().strip())
         title = ths[0].get_text().strip()
         if title == 'Month':
             continue
@@ -133,15 +132,15 @@ def parse_data(climate_data):
         try:
             key, parse_fn = ROW_PARSERS[title]
         except KeyError:
-            print("no parser for key '%s'" % title)
+            logger.warning('no parser for key "%s"', title)
             continue
         # each thing should be there only once!
         assert key not in out
         try:
             out[key] = [parse_fn(x) for x in data]
         except ValueError:
-            print('not able to parse one of those values:', data,
-                  '\nfor ', title)
+            logger.warning('not able to parse one of those values "%s" for "%s"',
+                        data, title)
             continue
     return out
 
@@ -164,8 +163,9 @@ if __name__ == '__main__':
                         help='file where to dump the augmented data')
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
-    # arg 1 : file in
-    # arg 2 : file out
+
+    configure_logging('INFO')
+
     dump_in = pickle.load(open(args.input_file))
 
     if True or ask_before_overwrite(args.output_file):
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     for i, (city, infos) in enumerate(dump_in.items()):
         if args.max_cities is not None and i+1 > args.max_cities:
             break
-        # print(city)
+        logger.debug(city)
         # TODO remove at some point
         # NOW DOING THIS IN THE fetch_dbpedia.py STEP
         # WE CAN PROBABLY REMOVE IT FROM HERE ALL TOGETHER
@@ -198,8 +198,8 @@ if __name__ == '__main__':
         # parsing population
         pop = parse_population(infos)
         if pop is None:
-            # print('no pop for', city)
-            # print(infos)
+            # logger.debug('no pop for', city)
+            # logger.debug(infos)
             continue
 
         url = urlparse('http://' + infos['source'])
@@ -208,7 +208,7 @@ if __name__ == '__main__':
         data = parse_climate_table(html)
         if data is None:
             nb_no_climate += 1
-            # print('no climate for', city)
+            # logger.debug('no climate for %s', city)
             continue
 
         parsed_data = parse_data(data)
