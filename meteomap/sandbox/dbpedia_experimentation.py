@@ -1,3 +1,4 @@
+import sys
 from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
 from pprint import pprint
@@ -13,21 +14,41 @@ def query_and_print(sparql, query):
     return results['results']['bindings']
 
 
-
 if __name__ == '__main__':
     sparql = SPARQLWrapper("http://dbpedia.org/sparql")
     query_and_print(sparql,"""
-            PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX dbo: <http://dbpedia.org/ontology/>
-            PREFIX dbp: <http://dbpedia.org/property/>
-            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+        PREFIX dbo: <http://dbpedia.org/ontology/>
+        PREFIX dbp: <http://dbpedia.org/property/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
+        PREFIX yago: <http://dbpedia.org/class/yago/>
 
-            SELECT count(?city)
-            # WHERE {{ ?city a dbo:City} UNION { ?city dbo:type dbo:Citytv}}
-            # WHERE {?city a dbo:City}
-            WHERE {?city a dbo:City}
-            """)
+
+        SELECT ?city
+               AVG(?lat) as ?lat AVG(?long) as ?long
+               MIN(?source) as ?source
+               MAX(?pop) as ?maxpop
+               MIN(?name) as ?name
+               MIN(?set_type) as ?set_type
+
+        WHERE {
+          {{ ?city a dbo:City } UNION { ?city a yago:City108524735}}.
+          ?city geo:lat ?lat.
+          ?city geo:long ?long.
+          ?city prov:wasDerivedFrom ?source.
+          ?city ?p ?pop.
+          FILTER(regex(?p, "population", "i") &&
+                 isNumeric(?pop))
+          OPTIONAL { ?city dbp:name ?name }
+          OPTIONAL { ?city dbp:settlementType ?set_type }
+        }
+        GROUP BY $city
+        HAVING(MAX(?pop) > 1000000)
+        LIMIT 100
+        """)
+
+    sys.exit()
 
     cities_dict = defaultdict(lambda : {})
     batch = 1000
@@ -43,7 +64,8 @@ if __name__ == '__main__':
 
             SELECT ?city ?lat ?long ?p ?o
             WHERE {{
-                {{?city a dbo:Citytv}} UNION {{?city a dbo:City}}.
+                # {{?city a dbo:Citytv}} UNION {{?city a dbo:City}}.
+                ?city a dbo:Settlement.
                 ?city ?p ?o.
                 ?city geo:lat ?lat.
                 ?city geo:long ?long.
@@ -80,17 +102,3 @@ if __name__ == '__main__':
 
         pprint(cities_dict)
         print(len(cities_dict))
-
-
-
-
-    # query_and_print("""
-        # PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    #     PREFIX dbo: <http://dbpedia.org/ontology/>
-    #     PREFIX dbp: <http://dbpedia.org/property/>
-
-    #     SELECT ?city ?p ?o
-    #     WHERE {
-    #         ?city a dbo:City.
-
-

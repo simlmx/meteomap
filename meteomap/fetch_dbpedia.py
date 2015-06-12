@@ -1,9 +1,8 @@
-import sys, gzip, pickle, argparse, time
+import sys, pickle, argparse, time
 from urllib.error import URLError
-from pprint import pprint
 from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
-from meteomap.utils import Timer, open, ask_before_overwrite
+from meteomap.utils import Timer, open, ask_before_overwrite, configure_logging
 
 
 def sparql_query(sparql, q, limit=None, batch=1000):
@@ -40,8 +39,14 @@ def clean_minuses(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='fetch the data from dbpedia')
     parser.add_argument('output_file', help='file where to dump the data')
+    parser.add_argument('--min-pop', default=1e5, help='minimum population to'
+                        ' keep the city (if there are multiple population'
+                        ' fields, we keep the maximum)')
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
+
+    configure_logging()
+
     output = args.output_file
     if not ask_before_overwrite(output):
         sys.exit()
@@ -68,28 +73,31 @@ if __name__ == '__main__':
     cities = list(sparql_query(sparql,
         """
         PREFIX dbo: <http://dbpedia.org/ontology/>
-        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX dbp: <http://dbpedia.org/property/>
         PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
         PREFIX prov: <http://www.w3.org/ns/prov#>
+        PREFIX yago: <http://dbpedia.org/class/yago/>
 
         SELECT ?city
                AVG(?lat) as ?lat AVG(?long) as ?long
                MIN(?source) as ?source
                MAX(?pop) as ?maxpop
+               MIN(?name) as ?name
 
         WHERE {
-          ?city a dbo:Settlement.
+          # ?city a dbo:Settlement.
+          {{ ?city a dbo:City } UNION { ?city a yago:City108524735}}.
           ?city geo:lat ?lat.
           ?city geo:long ?long.
           ?city prov:wasDerivedFrom ?source.
           ?city ?p ?pop.
           FILTER(regex(?p, "population", "i") &&
                  isNumeric(?pop))
+          OPTIONAL { ?city dbp:name ?name }
         }
         GROUP BY $city
-        HAVING(MAX(?pop) > 1000000)
-
-        """, limit=args.max_cities))
+        HAVING(MAX(?pop) > %i)
+        """ % args.min_pop , limit=args.max_cities))
     print('got', len(cities))
 
     def f():
@@ -115,8 +123,8 @@ if __name__ == '__main__':
             WHERE {{
                 <{}> ?p ?o.
                 FILTER(
-                    regex(?p, "population", "i"))
-                    # || regex(?p, "elevation", "i"))
+                    regex(?p, "population", "i") ||
+                    regex(?p, "elevation", "i"))
             }}
             """.format(city))
 

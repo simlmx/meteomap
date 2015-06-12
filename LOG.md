@@ -105,3 +105,20 @@ climat, voir les logs de add_wiki_data_to_dump.py
 10 juin
 ========
 commencé à utiliser le logging python
+
+11 juin
+========
+Tout le pipeline est pas mal là. Tout semble rouler pour pogner le data.
+Reste à faire quelques petites vérifications voir si tout est là et à quel point
+j'ai du data de trop (genre de provinces et cie)...
+
+12 juin
+========
+On semble avoir quelques populations brisées, et ça semble être de la faute de
+dbpedia qui parse ça moyennement bien. Je vais essayer de mitiger les problèmes
+mais au final c'est peut-être pas tant grave. On a aussi plusieurs districts
+trop gros pour être des villes.
+Finalement j'ai réglé tout ça (je crois). je fetch dbp:city OR yago:city au lieu
+de Settlements, ca a l'air d'être mieux.
+
+Il y a encore Porthmouth qui à 76 de pop (TODO sûrement rang 76, vérifier ça)

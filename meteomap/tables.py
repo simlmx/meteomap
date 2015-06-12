@@ -15,11 +15,14 @@ class City(Base):
     population = sa.Column(sa.Integer)
     # elevation in meters
     elevation = sa.Column(sa.Float)
+    # (wikipedia) source
+    source = sa.Column(sa.String(200))
 
 
 class MonthlyStat(Base):
     __tablename__ = 'monthly_stat'
     id = sa.Column(sa.Integer, primary_key=True)
+    # 0 = jan, 11 = dec
     month = sa.Column(sa.Integer, nullable=False)
     city_id = sa.Column(sa.Integer, sa.ForeignKey("city.id"), nullable=False)
     stat_id = sa.Column(sa.Integer, sa.ForeignKey('stat.id'),

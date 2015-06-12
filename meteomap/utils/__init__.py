@@ -65,29 +65,29 @@ def ask_before_overwrite(filename):
 def are_you_sure(msg='Are you sure?'):
     """ prompts and asks if sure to do X """
     while True:
-        choice = input(msg + ' (Y/N) '.format(filename))
+        choice = input(msg + ' (Y/N) ')
         if choice == 'Y':
             return True
         elif choice == 'N':
             return False
 
 
-def init_session(verbose=False):
-    engine = create_engine(DATABASE_STR, echo=verbose)
+def init_session(url=DATABASE_STR, verbose=False):
+    engine = create_engine(url, echo=verbose)
     Session = sessionmaker(bind=engine)
     session = Session()
     return session
 
 
 @contextmanager
-def session_scope(dryrun=False):
+def session_scope(url=DATABASE_STR, dryrun=False):
     """Provide a transactional scope around a series of operations."""
-    session = init_session()
+    session = init_session(url)
     try:
         yield session
         if dryrun:
-            logger.info('would add %i new objects, modify %i and delete %i' %
-                  session.new, session.dirty, session.deleted)
+            logger.info('would add %i new objects, modify %i and delete %i',
+                  len(session.new), len(session.dirty), len(session.deleted))
             # session.rollback()
         else:
             session.commit()

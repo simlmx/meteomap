@@ -1,9 +1,8 @@
 import re, sys, pickle, argparse, logging
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse, quote, unquote
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from meteomap.utils import open, ask_before_overwrite, Timer, configure_logging
-from pprint import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ ROW_PARSERS = {
     'daily mean °c (°f)': ('avg', get_first_number),
     'daily mean °f (°c)': ('avg', get_second_number),
     'avg low °c (°f)': ('avgLow', get_first_number),
-    'avg low °f (°c)': ('averageLow', get_second_number),
+    'avg low °f (°c)': ('avgLow', get_second_number),
     'record low °c (°f)': ('recordLow', get_first_number),
     'record low °f (°c)': ('recordLow', get_second_number),
 
@@ -106,7 +105,7 @@ def parse_climate_table(html):
         return None
 
     if len(months) > 1:
-        logger.info('more than one matching table in html, using the first one')
+        logger.debug('more than one matching table in html, using the first one')
     table = months[0].parent.parent
     data = {}
     for tr in table.find_all('tr'):
@@ -154,7 +153,11 @@ def parse_population(infos):
     """
     for pop_key in POP_KEYS:
         if pop_key in infos:
-            return min(float(x) for x in infos[pop_key])
+            # we take the maximum in the group of the first key we find
+            # RENDU ICI TODO tester ca voir si le max fait qu'on a pas des
+            # populations de 40 oui 27, qui etait le rank
+            # FIXME remove above comment when done
+            return max(float(x) for x in infos[pop_key])
     return None
 
 
@@ -181,30 +184,23 @@ if __name__ == '__main__':
     new_data = {}
     nb_no_climate = 0
     for i, (city, infos) in enumerate(dump_in.items()):
+        timer.update(i)
         if args.max_cities is not None and i+1 > args.max_cities:
             break
         logger.debug(city)
-        # TODO remove at some point
-        # NOW DOING THIS IN THE fetch_dbpedia.py STEP
-        # WE CAN PROBABLY REMOVE IT FROM HERE ALL TOGETHER
-        # quick skip of the really small settlements
-        # this might not be optimal, we probably want some other criterion to
-        # decide if we should skip or not.
-        # we still want to do it because loading the HTML of a wikipedia page
-        # currently seems to be the bottleneck of the whole thing
-        # max_pop = 0
-        # for k,v in infos.items():
-        #     if 'population' in k and int(v) > max_pop:
-        #         max_pop = int(v)
-        # if max_pop < 1e5:
-        #     continue
 
         # parsing population
         pop = parse_population(infos)
+        # TODO should we skip cities with a population under X (an argument we
+        # could pass)?
         if pop is None:
             # logger.debug('no pop for', city)
             # logger.debug(infos)
             continue
+
+        # TODO
+        # parse the elevation. it might already be in the dump.gz
+        # the code is in obsolete parse_dbpedia_dump.py
 
         url = urlparse('http://' + infos['source'])
         url = urlopen(url.netloc + quote(url.path))
@@ -215,12 +211,20 @@ if __name__ == '__main__':
             # logger.debug('no climate for %s', city)
             continue
 
+        if 'name' in infos:
+            name = infos['name']
+        else:
+            # wikipedia.org/page/patate_,chose -> patate
+            name = unquote(url.geturl()).split('/')[-1].split(',')[0] \
+                .replace('_','').strip()
+
         parsed_data = parse_data(data)
         new_data[city] = {'population': pop,
                           'source': url.geturl(),
-                          'lat': infos['lat'],
-                          'long': infos['long']}
-        new_data[city].update(parsed_data)
-        timer.update(i+1)
+                          'lat': float(infos['lat']),
+                          'long': float(infos['long']),
+                          'name': name,
+                          'month_stats': parsed_data}
 
+    logger.info('parsed %i cities', len(new_data))
     pickle.dump(new_data, dump_out)

@@ -12,12 +12,13 @@ DATABASE = {
     'port': config['db']['port'],
 }
 
-DATABASE_STR = '{}://{}:{}@{}{}/{}'.format(
+DATABASE_STR_WITUOUT_TABLE = '{}://{}:{}@{}{}'.format(
     DATABASE['type'],
     DATABASE['user'],
     DATABASE['password'],
     DATABASE['host'],
-    ':' + DATABASE['port'] if DATABASE['port'] != '' else '',
-    DATABASE['name'])
+    ':' + DATABASE['port'] if DATABASE['port'] != '' else '')
+
+DATABASE_STR = '{}/{}'.format(DATABASE_STR_WITUOUT_TABLE, DATABASE['name'])
 
 LOGGING_CONFIG = config['logging']

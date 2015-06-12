@@ -1,3 +1,7 @@
+raise Exception('deprecated')
+""" keeping it here because everything has not been reimplemented elsewhere,
+    like parsing the elevation
+"""
 """ This script cleans the data we got from dbpedia and inserts it in the
     database
 """

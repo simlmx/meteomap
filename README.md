@@ -28,8 +28,8 @@ database creation and population
     # fetch the data
     python meteomap/fetch_dbpedia.py tmp/dbpedia_dump.gz
 
-    # parse the dbpedia data
-    python meteomap/parse_dbpedia_dump.py tmp/dbpedia_dump.gz tmp/parsed_dump.gz
+    # parse the dbpedia data and augment with wikipedia data
+    python meteomap/parse_and_augment_dump.py tmp/dbpedia_dump.gz tmp/parsed_dump.gz
 
     # create the database
     python meteomap/create_database.py

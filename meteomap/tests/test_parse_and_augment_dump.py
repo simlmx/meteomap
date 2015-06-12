@@ -1,7 +1,7 @@
 import unittest
-from meteomap.add_wiki_data_to_dump import get_first_number, get_second_number
+from meteomap.parse_and_augment_dump import get_first_number, get_second_number
 
-class TestAddWikiData(unittest.TestCase):
+class TestParseAndAugmentDump(unittest.TestCase):
     def test_parsing_fn(self):
         self.assertEqual(get_first_number('10.1 (12.3)'), 10.1)
         self.assertEqual(get_first_number('1,000.1 (12.3)'), 1000.1)
