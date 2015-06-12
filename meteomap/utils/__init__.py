@@ -56,14 +56,20 @@ def open(filename, *args, **kwargs):
 def ask_before_overwrite(filename):
     """ if `filename` already exists, will prompt before overwriting """
     if os.path.exists(filename):
-        while True:
-            choice = input(u'The file {} already exists. Overwrite? (Y/N) '.format(filename))
-            if choice == 'Y':
-                return True
-            elif choice == 'N':
-                return False
+        return are_you_sure(
+            u'The file {} already exists. Overwrite?'.format(filename))
     else:
         return True
+
+
+def are_you_sure(msg='Are you sure?'):
+    """ prompts and asks if sure to do X """
+    while True:
+        choice = input(msg + ' (Y/N) '.format(filename))
+        if choice == 'Y':
+            return True
+        elif choice == 'N':
+            return False
 
 
 def init_session(verbose=False):
@@ -80,9 +86,9 @@ def session_scope(dryrun=False):
     try:
         yield session
         if dryrun:
-            print('would add %i new objects, modify %i and delete %i' %
+            logger.info('would add %i new objects, modify %i and delete %i' %
                   session.new, session.dirty, session.deleted)
-            session.rollback()
+            # session.rollback()
         else:
             session.commit()
     except:
