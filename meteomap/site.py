@@ -1,6 +1,6 @@
 import sys, json, argparse
 
-from flask import Flask, request
+from flask import Flask, request, render_template
 from sqlalchemy import desc, func
 from geoalchemy2.elements import WKTElement
 
@@ -12,8 +12,9 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def home_route():
-    return '<a href="data?n=46&s=45&w=-73&e=-74">Montreal</a>'
+def index_route():
+    return render_template('index.html', data='patate poil')
+    # return '<a href="data?n=46&s=45&w=-73&e=-74">Montreal</a>'
 
 @app.route('/data')
 def data_route():
