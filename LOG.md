@@ -122,3 +122,43 @@ Finalement j'ai réglé tout ça (je crois). je fetch dbp:city OR yago:city au l
 de Settlements, ca a l'air d'être mieux.
 
 Il y a encore Porthmouth qui à 76 de pop (TODO sûrement rang 76, vérifier ça)
+
+16 juin
+=======
+premier vrai problème de mapping! En gros ce qu'on voit de la carte sur un
+écran, ce n'est pas un rectangle, mais une forme louche, donc je ne peux pas
+seulement avec une query SQL seulement trouver les villes qui sont entre les 4
+coins du "rectangle". Je dois trouver les villes qui sont à l'intérieur de la
+forme louche qui m'apparait à moi comme un rectangle.
+
+17 juin
+=======
+les coordonnés lat/long venant de dbpedia sont pas bonnes tout le temps, 
+ça utilise 35E devient 35 au lieu de -35, ou quelque chose comme ça
+exemple : melbourne. le package python wikipedia est capable d'aller chercher
+les coordonnées comme du monde lui, alors l'utiliser ou le faire même-moi,
+à partir de wikipedia
+
+ça s'en vient je pogne ça de l,API, mais y a certains villes (e.g. suffolk,
+virginia) où les coordonnées sont bizarre. premièrement je dois mettre
+coprimary=all comme option et deuxièmement je reçois qqch de bizarre
+
+21 juin
+=======
+j'ai réglé l'histoire de suffolk en différenciant title et name pour une ville
+(title = "Suffolk, Virginia" que j'utilise pour le wiki API et name je garde
+seulement Suffolk).
+Maintenant ça marche bien sauf qu'il manque encore des villes. Il y a des villes
+dans dbpedia qui ne sont ni dbo:city ni yago:city, comme Lima. Mais Lima était
+aussi un yago:capital alors j'ai ajouté ça, on va voir combien on en pogne...
+
+Aussi on devrait pe pogner la liste des pays en premier, ensuite de trouver les
+villes les plus grosses par pays. L'intérêt c'est qu'on pourrait afficher sur
+la carte N villes par pays. Comme ça les petits pays à côté de gros pays vont
+quand même avoir qqch à montrer. Quand on voit le monde au complet, on pourrait
+s'Arranger pour pas seulement voir plein de points en chine et aucun en amérique
+On pourrait avoir au moins une ville par pays aussi...
+Bon j'ai trouvé (comment ça se fait que j'ai pas vu ça avant??) plusieurs
+databases des villes du monde. Je pourrais partir de ça. Ensuite par contre ça
+va peut-être être plus dur trouver l'entrée wiki qui correspond à ça, par exmeple
+pour les villes qui ont le même nom qu'une autre ville plus connue

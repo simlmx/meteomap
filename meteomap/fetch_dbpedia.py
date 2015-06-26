@@ -39,9 +39,9 @@ def clean_minuses(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='fetch the data from dbpedia')
     parser.add_argument('output_file', help='file where to dump the data')
-    parser.add_argument('--min-pop', default=1e5, help='minimum population to'
+    parser.add_argument('--min-pop', default=1e6, help='minimum population to'
                         ' keep the city (if there are multiple population'
-                        ' fields, we keep the maximum)')
+                        ' fields, we keep the maximum)', type=int)
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
 
@@ -86,7 +86,9 @@ if __name__ == '__main__':
 
         WHERE {
           # ?city a dbo:Settlement.
-          {{ ?city a dbo:City } UNION { ?city a yago:City108524735}}.
+          {{ ?city a dbo:City }
+              UNION { ?city a yago:City108524735}
+              UNION { ?city a yago:Capital108518505}}.
           ?city geo:lat ?lat.
           ?city geo:long ?long.
           ?city prov:wasDerivedFrom ?source.

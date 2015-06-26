@@ -2,6 +2,7 @@ import re, sys, pickle, argparse, logging
 from urllib.parse import urlparse, quote, unquote
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
+import requests
 from meteomap.utils import open, ask_before_overwrite, Timer, configure_logging
 
 logger = logging.getLogger(__name__)
@@ -169,6 +170,9 @@ if __name__ == '__main__':
     parser.add_argument('output_file',
                         help='file where to dump the augmented data')
     parser.add_argument('--max-cities', '-m', type=int)
+    parser.add_argument('--min-pop', default=1e6, help='minimum population to'
+                        ' keep the city (if there are multiple population'
+                        ' fields, we keep the maximum)', type=int)
     args = parser.parse_args()
 
     configure_logging()
@@ -183,16 +187,58 @@ if __name__ == '__main__':
     timer = Timer(len(dump_in))
     new_data = {}
     nb_no_climate = 0
+    nb_coords_from_wiki = 0
+    nb_coords_from_dbpedia = 0
     for i, (city, infos) in enumerate(dump_in.items()):
         timer.update(i)
         if args.max_cities is not None and i+1 > args.max_cities:
             break
         logger.debug(city)
-
         # parsing population
         pop = parse_population(infos)
-        # TODO should we skip cities with a population under X (an argument we
-        # could pass)?
+        if pop < args.min_pop:
+            continue
+
+        wikiurl = urlparse('http://' + infos['source'])
+        wikiurl = urlopen(wikiurl.netloc + quote(wikiurl.path))
+
+        # title in the wikipedia sense
+        title = unquote(wikiurl.geturl()).split('/')[-1].replace('_', ' ')
+
+        if 'name' in infos:
+            name = infos['name']
+        else:
+            # patate_,chose -> patate
+            name = title.split(',')[0].strip()
+
+        # lat long and name from wikipedia, while we're at it
+        result = requests.get('http://en.wikipedia.org/w/api.php', params=dict(
+            action='query',
+            prop='coordinates',
+            titles=title,
+            colimit=1,
+            format='json')).json()
+        wikiapi_data = result['query']
+        assert len(wikiapi_data) == 1
+        wikiapi_data = wikiapi_data['pages']
+        assert len(wikiapi_data) == 1
+        wikiapi_data = next(iter(wikiapi_data.values()))
+        name = wikiapi_data['title']
+        # if the coordinates were returned by the API
+        if 'coordinates' in wikiapi_data:
+            coords = wikiapi_data['coordinates']
+            assert len(coords) == 1
+            lat = coords[0]['lat']
+            lon = coords[0]['lon']
+            nb_coords_from_wiki += 1
+        # if not, sometimes the coordinates are somewhere else and dbpedia
+        # picked them up
+        else:
+            lat = float(infos['lat'])
+            lon = float(infos['long'])
+            nb_coords_from_dbpedia += 1
+        logger.debug('%s : (%f, %f)', name, lat, lon)
+
         if pop is None:
             # logger.debug('no pop for', city)
             # logger.debug(infos)
@@ -202,29 +248,24 @@ if __name__ == '__main__':
         # parse the elevation. it might already be in the dump.gz
         # the code is in obsolete parse_dbpedia_dump.py
 
-        url = urlparse('http://' + infos['source'])
-        url = urlopen(url.netloc + quote(url.path))
-        html = url.read()
+        html = wikiurl.read()
         data = parse_climate_table(html)
         if data is None:
             nb_no_climate += 1
             # logger.debug('no climate for %s', city)
             continue
 
-        if 'name' in infos:
-            name = infos['name']
-        else:
-            # wikipedia.org/page/patate_,chose -> patate
-            name = unquote(url.geturl()).split('/')[-1].split(',')[0] \
-                .replace('_','').strip()
-
         parsed_data = parse_data(data)
         new_data[city] = {'population': pop,
-                          'source': url.geturl(),
-                          'lat': float(infos['lat']),
-                          'long': float(infos['long']),
+                          'source': wikiurl.geturl(),
+                          'lat': lat,  # float(infos['lat']),
+                          'long': lon,  # float(infos['long']),
                           'name': name,
                           'month_stats': parsed_data}
 
     logger.info('parsed %i cities', len(new_data))
+    logger.info('got %i coordinates from the wikipedia API',
+                nb_coords_from_wiki)
+    logger.info('got %i coordinates from dbpedia',
+                nb_coords_from_dbpedia)
     pickle.dump(new_data, dump_out)
