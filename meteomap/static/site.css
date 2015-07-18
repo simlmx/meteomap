@@ -1,14 +1,37 @@
 /* debug */
-/*html * {
-  border:1px solid;
-}*/
+/* html * { */
+/*   border:1px solid; */
+/* } */
+
+td {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
 
 #map {
-  height: 800px;
+  height: 600px;
+  width: 100%;
+}
+
+#month {
+  font-size: 20pt;
+  text-align: center;
+  display: inline-block;
+  width: 100px;
+}
+
+#prev_btn, #next_btn {
+  width:50px;
+  height:50px;
+}
+
+.temperature {
+  font-size: 10pt;
+  /* color: black; */
 }
 
 .citydata {
-  color:blue;
   margin-left:-100px;
   margin-top:0px;
   width:200px;

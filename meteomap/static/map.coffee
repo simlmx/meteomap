@@ -1,18 +1,118 @@
+MONTHNAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+    'Oct', 'Nov', 'Dec']
+
+MIN_RED = [255,230,230]
+MAX_RED = [204,0,0]
+MIN_BLUE = [230,230,255]
+MAX_BLUE = [0,0,204]
+MIN_GREEN = [230,255,230]
+MAX_GREEN = [0,120,0]
+BLACK = [0,0,0]
+
 # create a map in the "map" div, set the view to a given place and zoom
-map = L.map('map').setView([51.505, -0.09], 5);
+map = L.map('map').setView([51.505, -0.09], 5)
 # create a tile layer sourced from mapbox
 L.tileLayer('https://{s}.tiles.mapbox.com/v4/simlmx.3899a192/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg').addTo(map)
 # FIXME put the keys from mapbox in the config and delete those keys...
+#
+
+month = (new Date()).getMonth()
+$('#month').text(MONTHNAMES[month])
+
+updateCitiesMonth = ->
+    for c in cities
+        c.removeFromMap(map)
+        c.addToMap(month, map)
+        $('#month').text(MONTHNAMES[month])
+
+$('#prev_btn').click ->
+    month -= 1
+    if month < 0
+        month += 12
+    updateCitiesMonth()
+
+$('#next_btn').click ->
+    month += 1
+    if month > 11
+        month -= 12
+    updateCitiesMonth()
+
+rgb2hex = (red, green, blue) ->
+    rgb = blue | (green << 8) | (red << 16)
+    return '#' + (0x1000000 + rgb).toString(16).slice(1)
+
+# rgb_min = min color
+# rgb_max = max color
+# min = min value
+# max = max value
+# val = value we want a color for
+gradient = (rgb_min, rgb_max, min, max, val) ->
+    if val <= min
+        return rgb_min
+    else if val >= max
+        return rgb_max
+    delta = (rgb_max[i] - rgb_min[i] for i in [0,1,2])
+    # FIXME make a better interpolation
+    rgb = (rgb_min[i] + delta[i] * (val-min)/(max-min) for i in [0,1,2])
+    return rgb
+
+# perceivedBrightness = (rgb) ->
+#     [r,g,b] = rgb
+#     return Math.sqrt(
+#         r*r * .299 +
+#         g*g * .587 +
+#         b*b * .114)
+
+# textColorFromBg = (rgb) ->
+#     console.log perceivedBrightness(rgb)
+#     if perceivedBrightness(rgb) > 120
+#         return [0,0,0]
+#     return [255,255,255]
+
+temperatureToHtml = (value) ->
+    if value is null
+        return ""
+    if value > 10
+        rgb = gradient(MIN_RED, MAX_RED, 10, 40, value)
+    else
+        rgb = gradient(MAX_BLUE, MIN_BLUE, -15, 10, value)
+    # rgb_txt = textColorFromBg(rgb)
+    rgb_txt = BLACK
+    return "<div class=\"temperature\" style=\"\
+            background-color: #{rgb2hex(rgb...)};\
+            color: #{rgb2hex(rgb_txt...)}\
+            \">#{value}°C</div>"
+
+precipitationToHtml = (value) ->
+    if value is null
+        return ""
+    rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 250, value)
+    # rgb_txt = textColorFromBg(rgb)
+    rgb_txt = BLACK
+    return "<div class=\"temperature\" style=\"\
+            background-color: #{rgb2hex(rgb...)};\
+            color: #{rgb2hex(rgb_txt...)}\
+            \">#{value}mm</div>"
+
 
 class City
     constructor: (@name, @coords, @meteo) ->
 
     getData: (code, month) ->
+        if code not of @meteo
+            return null
         return @meteo[code][month]
 
     addToMap: (month, map) ->
-        html = "#{@getData('avgLow', month)} -
-                #{@getData('avgHigh', month)}"
+        high = @getData('avgHigh', month)
+        prec = @getData('precipitation', month)
+        if prec is null
+            prec = @getData('rain', month)
+        html = "#{temperatureToHtml(high)}"
+        html += "#{precipitationToHtml(prec)}"
+
+        # FIXME update markers (and corresponding icons) when we move the map
+        # but only do $('icon').html(...) when we move the month slider
         icon = L.divIcon({className: 'citydata', html: html, iconSize: null})
         @marker = L.marker(@coords, {title:@name, icon:icon})
         # @marker2 = L.marker(@coords)
@@ -23,10 +123,8 @@ class City
         map.removeLayer @marker
         # map.removeLayer @marker2
 
-console.log 'patate'
-
 cities = []
-addCities = (data) ->
+loadCities = (data) ->
     # devrait pouvoir etre accelerer en faisant qqch d'intelligent, i.e.
     # ne pas tout deleter a chaque fois. certains markers doivent normalement
     # rester et on va les remettre anyway
@@ -39,10 +137,9 @@ addCities = (data) ->
         monthly_stats = infos.month_stats
         city = new City(name, coords, monthly_stats)
         cities.push city
-        city.addToMap(0, map)
+        city.addToMap(month, map)
 
-mapCb = (e) ->
-    console.log 'patate'
+refreshCities = (e) ->
     bounds = map.getBounds()
     coords = 
         n: bounds.getNorth()# - (bounds.getNorth() - bounds.getSouth())*.1
@@ -50,7 +147,7 @@ mapCb = (e) ->
         e: bounds.getEast()# - (bounds.getEast() - bounds.getWest())*.1
         w: bounds.getWest()# + (bounds.getEast() - bounds.getWest())*.1
 
-    $.get('data', coords, addCities, 'json')
+    $.get('data', coords, loadCities, 'json')
 
     # debug
     # while frame.length > 0
@@ -62,8 +159,8 @@ mapCb = (e) ->
     # frame.push polygon
     # polygon.addTo(map)
 
-map.on('moveend', mapCb)
-mapCb({})
+map.on('moveend', refreshCities)
+refreshCities({})
 
 # debuging
 # map.on('click', onClick)
