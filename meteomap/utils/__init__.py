@@ -1,9 +1,9 @@
-import math, gzip, io, os, logging, logging.config
+import math, gzip, io, os, logging, logging.config, zipfile
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from meteomap.settings import config, DATABASE_STR, LOGGING_CONFIG
+from meteomap.settings import DATABASE_STR, LOGGING_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,16 @@ class Timer(object):
 
 
 def open(filename, *args, **kwargs):
+    """ Open different types of files based on the extension """
     if filename.endswith('.gz'):
         return gzip.open(filename, *args, **kwargs)
+    elif filename.endswith('.zip'):
+        z = zipfile.ZipFile(filename)
+        names = z.namelist()
+        if len(names) != 1:
+            raise ValueError('.zip files containing more than one file are not'
+                             ' supported')
+        return io.TextIOWrapper(z.open(names[0], 'rU'))
     else:
         return io.open(filename, *args, **kwargs)
 
@@ -152,4 +160,3 @@ def configure_logging(level=None):
     }
 
     logging.config.dictConfig(logging_config)
-
