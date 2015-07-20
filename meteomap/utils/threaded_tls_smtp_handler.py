@@ -33,7 +33,6 @@ class ThreadedTlsSMTPHandler(SMTPHandler):
     """
     def emit(self, record):
         try:
-            import string # for tls add this line
             try:
                 from email.utils import formatdate
             except ImportError:
@@ -43,14 +42,13 @@ class ThreadedTlsSMTPHandler(SMTPHandler):
                 port = smtplib.SMTP_PORT
             msg = self.format(record)
             msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                            self.fromaddr,
-                            string.join(self.toaddrs, ","),
-                            self.getSubject(record),
-                            formatdate(), msg)
+                self.fromaddr,
+                ','.join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(), msg)
             thread = Thread(target=send_mail, args=(self.mailhost, port, self.username, self.password, self.fromaddr, self.toaddrs, msg))
             thread.start()
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
             self.handleError(record)
-
