@@ -162,3 +162,11 @@ Bon j'ai trouvé (comment ça se fait que j'ai pas vu ça avant??) plusieurs
 databases des villes du monde. Je pourrais partir de ça. Ensuite par contre ça
 va peut-être être plus dur trouver l'entrée wiki qui correspond à ça, par exmeple
 pour les villes qui ont le même nom qu'une autre ville plus connue
+
+20 juillet
+==========
+pleins d'updates. rajouté un region_index et country_index, pour l'instant ça va
+faire la job pour bien plotter ça. reste à vérifier les villes qui n'ont pas été
+trouvées dans wikipédia (par exemple des myanmar VS burma), voir les logs
+ensuite va falloir penser à loader plus efficacement, ça hang un mini peu au début
+quand ça load

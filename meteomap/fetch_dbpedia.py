@@ -4,6 +4,10 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
 from meteomap.utils import Timer, open, ask_before_overwrite, configure_logging
 
+import logging
+logger = logging.getLogger(__name__)
+logger.critical('this file is deprecated')
+
 
 def sparql_query(sparql, q, limit=None, batch=1000):
     """

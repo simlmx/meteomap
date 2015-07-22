@@ -1,13 +1,10 @@
-# this has been moved to augment_with_wiki.py
 import re, sys, pickle, argparse, logging
-from urllib.parse import urlparse, quote, unquote
-from urllib.request import urlopen
+from pprint import pprint
+import wikipedia as wiki
 from bs4 import BeautifulSoup
-import requests
 from meteomap.utils import open, ask_before_overwrite, Timer, configure_logging
 
 logger = logging.getLogger(__name__)
-logger.critical('this file is deprecated')
 
 
 def get_first_number(x):
@@ -73,26 +70,6 @@ ROW_PARSERS = {
     'avg relative humidity (%)': ('humidity', float),
 }
 
-PROPERTY = 'http://dbpedia.org/property/'
-ONTOLOGY = 'http://dbpedia.org/ontology/'
-
-POP_KEYS = [
-    ONTOLOGY + 'populationTotal',
-    PROPERTY + 'population',
-    PROPERTY + 'populationCity',
-    ONTOLOGY + 'populationUrban',
-    PROPERTY + 'populationUrban',
-    ONTOLOGY + 'populationMetro',
-    PROPERTY + 'populationTotal',
-    PROPERTY + 'populationMetro',
-    PROPERTY + 'metroPopulation',
-    PROPERTY + 'populationEst',
-    PROPERTY + 'populationBlank',
-    PROPERTY + 'populationBlank1Name',
-    ONTOLOGY + 'populationRural',
-    PROPERTY + 'populationRural',
-]
-
 
 def parse_climate_table(html):
     """ returns somethings like
@@ -151,123 +128,103 @@ def parse_data(climate_data):
     return out
 
 
-def parse_population(infos):
-    """ goes into the infos of a city and deduces the population of the city
-    """
-    for pop_key in POP_KEYS:
-        if pop_key in infos:
-            # we take the maximum in the group of the first key we find
-            # RENDU ICI TODO tester ca voir si le max fait qu'on a pas des
-            # populations de 40 oui 27, qui etait le rank
-            # FIXME remove above comment when done
-            return max(float(x) for x in infos[pop_key])
-    return None
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='augments the data form dbpedia with data from wikipedia'
-                    ' directly, like population/elevation/climate')
-    parser.add_argument('input_file', help='dbpedia dump')
+        description='augments the data form geonames.org with data from'
+        'wikipedia, mainly the climate data')
+    parser.add_argument('input_file', help='parsed geonames dump')
     parser.add_argument('output_file',
-                        help='file where to dump the augmented data')
+                        help='output file for the augmented data')
     parser.add_argument('--max-cities', '-m', type=int)
-    parser.add_argument('--min-pop', default=1e6, help='minimum population to'
-                        ' keep the city (if there are multiple population'
-                        ' fields, we keep the maximum)', type=int)
+    parser.add_argument('--force', action='store_true', help='don\'t ask'
+                        ' before overwriting the output file')
     args = parser.parse_args()
 
     configure_logging()
 
     dump_in = pickle.load(open(args.input_file))
 
-    if True or ask_before_overwrite(args.output_file):
-        dump_out = open(args.output_file, 'w')
-    else:
+    if not (args.force or ask_before_overwrite(args.output_file)):
         sys.exit()
 
     timer = Timer(len(dump_in))
-    new_data = {}
+    new_data = []
+    nb_no_wiki = 0
     nb_no_climate = 0
     nb_coords_from_wiki = 0
-    nb_coords_from_dbpedia = 0
-    for i, (city, infos) in enumerate(dump_in.items()):
-        timer.update(i)
+    nb_coords_from_geonames = 0
+    for i, city in enumerate(dump_in):
+        timer.update()
         if args.max_cities is not None and i+1 > args.max_cities:
             break
         logger.debug(city)
-        # parsing population
-        pop = parse_population(infos)
-        if pop < args.min_pop:
+
+        got_wiki = False
+        for potential_page in [city.name + ', ' + city.region,
+                               city.name + ', ' + city.country]:
+            # should we also be looking for `city.name` by itself?
+            try:
+                page = wiki.page(potential_page)
+                got_wiki = True
+                break
+            except wiki.PageError:
+                # logger.info('didn\'t find wiki page "%s"', potential_page)
+                pass
+            except wiki.exceptions.DisambiguationError:
+                pass
+                # logger.info('landed on disambiguation for page "%s"',
+                #                  potential_page)
+                # logger.exception()
+            except Exception:
+                logger.info('unhandled exception while looking for wiki page'
+                            ' "%s"', potential_page)
+                logger.exception()
+                continue
+
+        if not got_wiki:
+            logger.info('didn\'t find a page for city %s', city)
+            nb_no_wiki += 1
             continue
 
-        wikiurl = urlparse('http://' + infos['source'])
-        wikiurl = urlopen(wikiurl.netloc + quote(wikiurl.path))
-
-        # title in the wikipedia sense
-        title = unquote(wikiurl.geturl()).split('/')[-1].replace('_', ' ')
-
-        if 'name' in infos:
-            name = infos['name']
-        else:
-            # patate_,chose -> patate
-            name = title.split(',')[0].strip()
-
-        # lat long and name from wikipedia, while we're at it
-        result = requests.get('http://en.wikipedia.org/w/api.php', params=dict(
-            action='query',
-            prop='coordinates',
-            titles=title,
-            colimit=1,
-            format='json')).json()
-        wikiapi_data = result['query']
-        assert len(wikiapi_data) == 1
-        wikiapi_data = wikiapi_data['pages']
-        assert len(wikiapi_data) == 1
-        wikiapi_data = next(iter(wikiapi_data.values()))
-        name = wikiapi_data['title']
-        # if the coordinates were returned by the API
-        if 'coordinates' in wikiapi_data:
-            coords = wikiapi_data['coordinates']
-            assert len(coords) == 1
-            lat = coords[0]['lat']
-            lon = coords[0]['lon']
-            nb_coords_from_wiki += 1
-        # if not, sometimes the coordinates are somewhere else and dbpedia
-        # picked them up
-        else:
-            lat = float(infos['lat'])
-            lon = float(infos['long'])
-            nb_coords_from_dbpedia += 1
-        logger.debug('%s : (%f, %f)', name, lat, lon)
-
-        if pop is None:
-            # logger.debug('no pop for', city)
-            # logger.debug(infos)
-            continue
-
-        # TODO
-        # parse the elevation. it might already be in the dump.gz
-        # the code is in obsolete parse_dbpedia_dump.py
-
-        html = wikiurl.read()
-        data = parse_climate_table(html)
-        if data is None:
+        html = page.html()
+        climate_data = parse_climate_table(html)
+        if climate_data is None:
+            logger.debug('no climate table for %s', city)
             nb_no_climate += 1
-            # logger.debug('no climate for %s', city)
             continue
+        climate_data = parse_data(climate_data)
 
-        parsed_data = parse_data(data)
-        new_data[city] = {'population': pop,
-                          'source': wikiurl.geturl(),
-                          'lat': lat,  # float(infos['lat']),
-                          'long': lon,  # float(infos['long']),
-                          'name': name,
-                          'month_stats': parsed_data}
+        # because the wikipedia library crashes there sometimes
+        try:
+            coords = page.coordinates
+        except KeyError:
+            coords = None
 
-    logger.info('parsed %i cities', len(new_data))
+        if coords is not None:
+            coords = [float(x) for x in coords]
+            nb_coords_from_wiki += 1
+        else:
+            coords = city.coords
+            nb_coords_from_geonames += 1
+
+        city.month_stats = climate_data
+        city.wiki_source = page.url
+        city.coords = coords
+
+        new_data.append(city)
+
+    # pprint(new_data)
+    # for city in new_data:
+        # print(city)
+        # pprint(city.month_stats)
+        # print(city.wiki_source)
+
+    logger.info('got %i cities', len(new_data))
+    logger.info('skipped %i cities with no wikipedia page', nb_no_wiki)
+    logger.info('skipped %i cities with no climate table', nb_no_climate)
     logger.info('got %i coordinates from the wikipedia API',
                 nb_coords_from_wiki)
     logger.info('got %i coordinates from dbpedia',
-                nb_coords_from_dbpedia)
+                nb_coords_from_geonames)
+    dump_out = open(args.output_file, 'w')
     pickle.dump(new_data, dump_out)

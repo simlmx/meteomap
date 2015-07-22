@@ -24,6 +24,8 @@ def data_route():
     east = request.args.get('e')
     north = request.args.get('n')
     south = request.args.get('s')
+    month = request.args.get('m')
+
     if west is None or east is None or south is None or north is None:
         return 'TODO 404'
 
@@ -34,6 +36,8 @@ def data_route():
         .filter(func.ST_Covers(
             cast(rectangle, Geometry()),
             func.ST_SetSRID(cast(City.location, Geometry()), 0))) \
+        .order_by(City.country_index) \
+        .order_by(City.region_index) \
         .order_by(desc(City.population)) \
         .limit(25).subquery('city')
 
@@ -44,7 +48,11 @@ def data_route():
         sq.c.population, MonthlyStat.month,
         MonthlyStat.value, Stat.code) \
         .join(MonthlyStat) \
-        .join(Stat)
+        .join(Stat) \
+        .filter(Stat.code.in_(['avgHigh', 'precipitation']))
+
+    if month is not None:
+        query = query.filter(MonthlyStat.month == month)
 
     def default():
         return {'month_stats': defaultdict(dict)}

@@ -9,6 +9,8 @@ class City(Base):
     __tablename__ = 'city'
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(100), nullable=False)
+    region = sa.Column(sa.String(100), nullable=False)
+    country = sa.Column(sa.String(100), nullable=False)
     location = sa.Column(ga.Geography(geometry_type='POINT', srid=4326))
     # total population (the smallest if there are multiple like
     # city/urban/metro, etc.)
@@ -17,6 +19,14 @@ class City(Base):
     elevation = sa.Column(sa.Float)
     # (wikipedia) source
     source = sa.Column(sa.String(200))
+    # This idea behind this thing is that when choosing what cities to show,
+    # the cities with a smaller index will be chosen first
+    # display_index = sa.Column(sa.Integer, default=1e9)
+    # Index of the city in the region/country, when they are ordered by
+    # decreasing population. It's for showing cities inteligently... at least
+    # before I come up with a idea for a display_index
+    region_index = sa.Column(sa.Integer, default=1e9)
+    country_index = sa.Column(sa.Integer, default=1e9)
 
 
 class MonthlyStat(Base):

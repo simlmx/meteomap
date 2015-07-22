@@ -10,7 +10,7 @@ MAX_GREEN = [0,120,0]
 BLACK = [0,0,0]
 
 # create a map in the "map" div, set the view to a given place and zoom
-map = L.map('map').setView([51.505, -0.09], 5)
+map = L.map('map').setView([45.505, -73.0], 5)
 # create a tile layer sourced from mapbox
 L.tileLayer('https://{s}.tiles.mapbox.com/v4/simlmx.3899a192/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg').addTo(map)
 # FIXME put the keys from mapbox in the config and delete those keys...
