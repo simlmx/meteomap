@@ -16,7 +16,7 @@ install
     source mm-ve/bin/activate
 
     # install the python requirements
-    pip install -r py_req.txt
+    pip install -r requirements.txt
     
     # configure
     cp config_sample.json config.json # and edit config.json
