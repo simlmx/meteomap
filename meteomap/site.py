@@ -7,7 +7,7 @@ from geoalchemy2.elements import WKTElement
 from geoalchemy2 import Geometry
 
 from meteomap.tables import City, MonthlyStat, Stat
-from meteomap.utils import init_session, configure_logging
+from meteomap.utils import session_scope, configure_logging
 
 
 app = Flask(__name__)
@@ -31,42 +31,42 @@ def data_route():
 
     rectangle = 'POLYGON(({0} {1}, {0} {2}, {3} {2}, {3} {1}, {0} {1}))' \
         .format(west, south, north, east)
-    session = init_session()
-    sq = session.query(City) \
-        .filter(func.ST_Covers(
-            cast(rectangle, Geometry()),
-            func.ST_SetSRID(cast(City.location, Geometry()), 0))) \
-        .order_by(City.country_index) \
-        .order_by(City.region_index) \
-        .order_by(desc(City.population)) \
-        .limit(25).subquery('city')
+    with session_scope() as session:
+        sq = session.query(City) \
+            .filter(func.ST_Covers(
+                cast(rectangle, Geometry()),
+                func.ST_SetSRID(cast(City.location, Geometry()), 0))) \
+            .order_by(City.country_index) \
+            .order_by(City.region_index) \
+            .order_by(desc(City.population)) \
+            .limit(25).subquery('city')
 
-    query = session.query(
-        sq.c.name,
-        func.ST_Y(cast(sq.c.location, Geometry())),
-        func.ST_X(cast(sq.c.location, Geometry())),
-        sq.c.population, MonthlyStat.month,
-        MonthlyStat.value, Stat.code) \
-        .join(MonthlyStat) \
-        .join(Stat) \
-        .filter(Stat.code.in_(['avgHigh', 'precipitation']))
+        query = session.query(
+            sq.c.name,
+            func.ST_Y(cast(sq.c.location, Geometry())),
+            func.ST_X(cast(sq.c.location, Geometry())),
+            sq.c.population, MonthlyStat.month,
+            MonthlyStat.value, Stat.code) \
+            .join(MonthlyStat) \
+            .join(Stat) \
+            .filter(Stat.code.in_(['avgHigh', 'precipitation']))
 
-    if month is not None:
-        query = query.filter(MonthlyStat.month == month)
+        if month is not None:
+            query = query.filter(MonthlyStat.month == month)
 
-    def default():
-        return {'month_stats': defaultdict(dict)}
-    cities = defaultdict(default)
-    # print(query)
-    # format what is returned from the query
-    for row in query:
-        name = row[0]
-        cities[name]['lat'] = row[1]
-        cities[name]['long'] = row[2]
-        cities[name]['pop'] = row[3]
-        cities[name]['month_stats'][row[6]][row[4]] = row[5]
-    # from pprint import pprint
-    # pprint(cities)
+        def default():
+            return {'month_stats': defaultdict(dict)}
+        cities = defaultdict(default)
+        # print(query)
+        # format what is returned from the query
+        for row in query:
+            name = row[0]
+            cities[name]['lat'] = row[1]
+            cities[name]['long'] = row[2]
+            cities[name]['pop'] = row[3]
+            cities[name]['month_stats'][row[6]][row[4]] = row[5]
+        # from pprint import pprint
+        # pprint(cities)
     return json.dumps(cities)
 
 
