@@ -32,9 +32,9 @@ td {
 }
 
 .citydata {
-  margin-left:-100px;
+  margin-left:-75px;
   margin-top:0px;
-  width:200px;
+  width:150px;
   font-size:16pt;
   
   display:flex;
