@@ -170,3 +170,36 @@ faire la job pour bien plotter ça. reste à vérifier les villes qui n'ont pas 
 trouvées dans wikipédia (par exemple des myanmar VS burma), voir les logs
 ensuite va falloir penser à loader plus efficacement, ça hang un mini peu au début
 quand ça load
+
+24 juillet
+==========
+idées pour mieux dispercer les villes:
+faire une genre de moyenne de
+- rank par région
+- rank par pays
+- isolation (distance moyenne des voisins) par région
+- isolation (même chose) par pays
+- nb de statistiques météo (pertinentes)
+
+découper la map en N rectangles et prendre une ville par rectangle. -> 
+idiot si y a de l`ocean... ah non ca marche y aura just emoins de villes, ce
+qui est pas fou
+
+25 juillet
+==========
+j'ai essayé de découper la map en N rectangles. c'est très lent mais je n'ai pas
+essayé d'optimiser, sauf que dès qu'on bouge la map à peine, ça doit tout recaculer
+refetcher et ça donne un résultat différent (aussi bon mais trop différent pour
+avoir à peine bougé).
+je suis en train de penser que peut-être chaque ville devrait avoir un zoom level
+à partir duquel elle doit apparaitre, calculé en avance et déjà dans la BD. 
+Comme ça la query serait seulement "tout ce qu'on fait dans zoom level X". Pour
+chaque zoom level plus précis, on ne ferait qu'ajouter plus de ville. Pour
+un zoom level donné, là ça a du sens une formule qui prend en compte quelques
+critères (population, isolation etc.)... en tous cas penser à ça!
+
+26 juillet
+==========
+J'ai fini par faire mon idee de priority_index, j'ajoute les villes une après
+l'autre dans un ordre qui fait en sorte que chacun nouvelle ville est loin des
+autres. ça semble marcher pas pire!

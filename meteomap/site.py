@@ -1,13 +1,11 @@
 import json, argparse
 from collections import defaultdict
 from flask import Flask, request, render_template
-from sqlalchemy import desc, func, cast
-from sqlalchemy.orm import aliased
-from geoalchemy2.elements import WKTElement
+from sqlalchemy import func, cast
 from geoalchemy2 import Geometry
-
 from meteomap.tables import City, MonthlyStat, Stat
 from meteomap.utils import session_scope, configure_logging
+from meteomap.settings import config
 
 
 app = Flask(__name__)
@@ -32,15 +30,15 @@ def data_route():
     rectangle = 'POLYGON(({0} {1}, {0} {2}, {3} {2}, {3} {1}, {0} {1}))' \
         .format(west, south, north, east)
     with session_scope() as session:
+        # choose N cities
         sq = session.query(City) \
             .filter(func.ST_Covers(
                 cast(rectangle, Geometry()),
                 func.ST_SetSRID(cast(City.location, Geometry()), 0))) \
-            .order_by(City.country_index) \
-            .order_by(City.region_index) \
-            .order_by(desc(City.population)) \
-            .limit(25).subquery('city')
+            .order_by(City.priority_index) \
+            .limit(config['nb_cities_at_once']).subquery('city')
 
+        # get their data
         query = session.query(
             sq.c.name,
             func.ST_Y(cast(sq.c.location, Geometry())),

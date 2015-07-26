@@ -19,14 +19,12 @@ class City(Base):
     elevation = sa.Column(sa.Float)
     # (wikipedia) source
     source = sa.Column(sa.String(200))
-    # This idea behind this thing is that when choosing what cities to show,
-    # the cities with a smaller index will be chosen first
-    # display_index = sa.Column(sa.Integer, default=1e9)
-    # Index of the city in the region/country, when they are ordered by
-    # decreasing population. It's for showing cities inteligently... at least
-    # before I come up with a idea for a display_index
-    region_index = sa.Column(sa.Integer, default=1e9)
-    country_index = sa.Column(sa.Integer, default=1e9)
+    # order in which we will select the cities
+    priority_index = sa.Column(sa.Integer)
+    # rank of the city within it's region/country. I use it to calculate the
+    # priority index
+    region_rank = sa.Column(sa.Integer, default=1e9)
+    country_rank = sa.Column(sa.Integer, default=1e9)
 
 
 class MonthlyStat(Base):

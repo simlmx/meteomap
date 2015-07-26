@@ -7,6 +7,24 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
+def _add_rank(cities_per_cat, catname):
+    """ util for add_region_index and add_country_index """
+    for cat, cities in cities_per_cat.items():
+        sorted_cities = sorted(cities, key=lambda x: x.pop, reverse=True)
+        for i,c in enumerate(sorted_cities):
+            setattr(c, catname + '_rank', i)
+
+
+def add_region_rank(cities_per_region):
+    """ add an region_rank field to cities """
+    _add_rank(cities_per_region, 'region')
+
+
+def add_country_rank(cities_per_country):
+    """ add an country_rank field to cities """
+    _add_rank(cities_per_country, 'country')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='fetch the data from a'
                                      ' country file from geonames.org or from'
@@ -47,7 +65,8 @@ if __name__ == '__main__':
 
     countries = {}
     with open(args.country_infos_file) as f:
-        reader = csv.reader((line for line in f if not line.startswith('#')), delimiter='\t')
+        reader = csv.reader((line for line in f if not line.startswith('#')),
+                            delimiter='\t')
         for row in reader:
             countries[row[0]] = row[4]
     # pprint(countries)
@@ -113,9 +132,7 @@ if __name__ == '__main__':
                 other_date = other_city.modif_date
                 this_date = new_city.modif_date
                 if other_date == this_date:
-                    pprint(other_city)
-                    pprint(new_city)
-                    logger.warning('duplicate city %s', name)
+                    logger.debug('duplicate city %s', name)
                     keep_this_city = False
                 elif this_date > other_date:
                     keep_this_city = True
@@ -125,7 +142,8 @@ if __name__ == '__main__':
                 cities[country][region][name] = new_city
                 nb_cities_kept += 1
 
-            if args.max_cities is not None and nb_cities_kept >= args.max_cities:
+            if args.max_cities is not None \
+                    and nb_cities_kept >= args.max_cities:
                 break
             timer.update()
 
@@ -147,7 +165,7 @@ if __name__ == '__main__':
                     # will remove `city`
                     if (country, region, city2.name) not in cities_to_remove \
                             and distance(city, city2) < args.too_close:
-                        logger.info('removing %s, too close to %s',
+                        logger.debug('removing %s, too close to %s',
                                     city.name, city2.name)
                         cities_to_remove.add((country, region, city.name))
                         break
@@ -156,32 +174,24 @@ if __name__ == '__main__':
     for country, region, city in cities_to_remove:
         del cities[country][region][city]
 
-    # add the region_index
-    # for regions in cities.values():
-    #     for cs in regions.values():
-    #         cs = list(cs.values())
-    #         cs = sorted(cs, key=lambda x: x.pop, reverse=True)
-    #         for i,c in enumerate(cs):
-    #             c.region_index = i
-
-    # add the country_index
-    # TODO not tested!
-    # for regions in cities.values():
-    #     all_cs = []
-    #     for cs in regions.values():
-    #         all_cs.extend(cs)
-    #     all_cs = sorted(all_cs, key=lambda x: x.pop, reverse=True)
-    #     for i,c in enumerate(all_cs):
-    #         c.country_index = i
-
-    # pprint(cities_flat)
-
     # flatten the cities
     cities_flat = []
-    for regions in cities.values():
-        for cs in regions.values():
+    cities_per_region = defaultdict(list)
+    cities_per_country = defaultdict(list)
+    for country, regions in cities.items():
+        for region, cs in regions.items():
             for city in cs.values():
                 cities_flat.append(city)
+                cities_per_region[region].append(city)
+                cities_per_country[country].append(city)
+
+    cities = cities_flat
+    # pprint(cities)
+    # pprint(cities_per_region)
+    # pprint(cities_per_country)
+
+    add_region_rank(cities_per_region)
+    add_country_rank(cities_per_country)
 
     logger.info('ended up with %i cities', len(cities_flat))
 
