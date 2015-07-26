@@ -12,19 +12,32 @@ class City(object):
         self.feature = feature
 
     def distance(self, other):
-        rad = math.pi / 180.
-        delta_lat = (self.coords[0] - other.coords[0]) * rad
-        delta_lon = (self.coords[1] - other.coords[1]) * rad
-        a = math.sin(delta_lat/2.)**2 + math.cos(self.coords[0]*rad) \
-            * math.cos(other.coords[0]*rad) * math.sin(delta_lon/2.)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        return c * 6371.
+        return lat_lon_distance(
+            self.coords[0],
+            self.coords[1],
+            other.coords[0],
+            other.coords[1])
 
     def __str__(self):
-        return '{}, {}, {}'.format(self.name, self.region, self.country)
+        s = '{}, {}, {}\n'.format(self.name, self.region, self.country)
+        for at, val in self.__dict__.items():
+            s += ' ' + at + ': ' + str(val) + '\n'
+        return s
 
     def __repr__(self):
         return '<%s>' % self
+
+def lat_lon_distance(lat1, lon1, lat2, lon2):
+    """ calculates the km distance between two points specified as their
+        lat and lon coordinates
+    """
+    rad = math.pi / 180.
+    delta_lat = (lat1 - lat2) * rad
+    delta_lon = (lon1 - lon2) * rad
+    a = math.sin(delta_lat/2.)**2 + math.cos(lat1*rad) \
+        * math.cos(lat2*rad) * math.sin(delta_lon/2.)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return c * 6371.
 
 def distance(c1, c2):
     return c1.distance(c2)
