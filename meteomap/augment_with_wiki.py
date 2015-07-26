@@ -136,6 +136,10 @@ if __name__ == '__main__':
     parser.add_argument('output_file',
                         help='output file for the augmented data')
     parser.add_argument('--max-cities', '-m', type=int)
+    parser.add_argument('--skip-wiki', action='store_true', help='skip the'
+                        ' wikipedia API calling part. mostly for debugging')
+    parser.add_argument('--wiki-sub', help='use wiki data previously fetched'
+                        ' in this file only')
     parser.add_argument('--force', action='store_true', help='don\'t ask'
                         ' before overwriting the output file')
     args = parser.parse_args()
@@ -146,6 +150,22 @@ if __name__ == '__main__':
 
     if not (args.force or ask_before_overwrite(args.output_file)):
         sys.exit()
+
+    if args.skip_wiki:
+        logger.info('skipping wikipedia')
+        for c in dump_in:
+            c.month_stats = {'avgHigh':range(12), 'precipitation': range(12)}
+            c.wiki_source = ''
+        dump_out = open(args.output_file, 'w')
+        pickle.dump(dump_in, dump_out)
+        sys.exit()
+
+    wiki_sub = None
+    if args.wiki_sub is not None:
+        logger.info('using wiki data from %s', args.wiki_sub)
+        wiki_sub = {'{}/{}/{}'.format(x.name, x.region, x.country): x for x in
+                    pickle.load(open(args.wiki_sub))}
+
 
     timer = Timer(len(dump_in))
     new_data = []
@@ -158,6 +178,16 @@ if __name__ == '__main__':
         if args.max_cities is not None and i+1 > args.max_cities:
             break
         logger.debug(city)
+
+        if wiki_sub is not None:
+            city_id = '{}/{}/{}'.format(city.name, city.region, city.country)
+            if city_id in wiki_sub:
+                other_city = wiki_sub[city_id]
+                city.coords = other_city.coords
+                city.month_stats = other_city.month_stats
+                city.wiki_source = other_city.wiki_source
+                new_data.append(city)
+            continue
 
         got_wiki = False
         for potential_page in [city.name + ', ' + city.region,
