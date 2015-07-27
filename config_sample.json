@@ -6,4 +6,16 @@
         "host": "db host",
         "port": "db port"
     }
+    "logging": {
+        "level": "INFO",
+        "handlers": ["file", "console", "email"],
+        "email": {
+            "server": "your email server",
+            "port": 1234,
+            "address": "your email",
+            "pass": "your email password"
+        }
+    },
+    "nb_cities_at_once": 35,
+    "maintenance": false
 }

@@ -25,14 +25,23 @@ install
 database creation and population
 ================================
 
-    # fetch the data
-    python meteomap/fetch_dbpedia.py tmp/dbpedia_dump.gz
+    # fetch the list of cities and associated files from geonames.org
+    wget "http://download.geonames.org/export/dump/admin1CodesASCII.txt" -P tmp
+    wget "http://download.geonames.org/export/dump/allCountries.zip" -P tmp
+    wget "http://download.geonames.org/export/dump/countryInfo.txt" -P tmp
 
-    # parse the dbpedia data and augment with wikipedia data
-    python meteomap/parse_and_augment_dump.py tmp/dbpedia_dump.gz tmp/parsed_dump.gz
+    # parse the city files
+    python meteomap/parse_geonames.py --admin1codes-file tmp/admin1CodesASCII.txt \
+    --country-infos-file tmp/countryInfo.txt tmp/allCountries.zip tmp/parsed_geonames_world.gz
+
+    # add wiki data
+    python meteomap/augment_with_wiki.py tmp/parsed_geonames_world.gz tmp/augmented_geonames_world.gz
 
     # create the database
     python meteomap/create_database.py
 
     # insert the data in the database
-    python meteomap/load_database.py tmp/parsed_dump.gz
+    python meteomap/load_database.py tmp/augmented_geonames_world.gz
+
+    # start the site
+    python meteomap/sites.py
