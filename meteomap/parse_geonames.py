@@ -32,8 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('input_file', help='geonames.org file (zipped or not)')
     parser.add_argument('output_file', help='file where to dump the data')
     parser.add_argument('--min-pop', default=500, help='minimum population to'
-                        ' keep the city (if there are multiple population'
-                        ' fields, we keep the maximum)', type=int)
+                        ' keep the city', type=int)
     parser.add_argument('--admin1codes-file', help='admin1CodesASCII.txt'
                         ' from geonames.org', required=True)
     parser.add_argument('--country-infos-file', help='countryInfo.txt'

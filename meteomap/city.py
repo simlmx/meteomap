@@ -22,6 +22,7 @@ class City(object):
         s = '{}, {}, {}\n'.format(self.name, self.region, self.country)
         for at, val in self.__dict__.items():
             s += ' ' + at + ': ' + str(val) + '\n'
+        s = s[:-1]
         return s
 
     def __repr__(self):
