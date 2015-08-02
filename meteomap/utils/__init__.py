@@ -9,6 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class Timer(object):
+
+    @classmethod
+    def default_print_if(cls, nb_done):
+        """ only prints 0,1,2,3,9,10,20,30,..,90,100,200,300,...etc.
+        """
+        return nb_done % (10**int(math.log10(nb_done))) == 0
+
     def __init__(self, nb_total=None, dont_print_before=1, print_if=None):
         self.nb_total = nb_total
         self.min_print = dont_print_before
@@ -16,11 +23,7 @@ class Timer(object):
         self.nb_done = 0
 
         if print_if is None:
-            def f(nb_done):
-                """ only prints 0,1,2,3,9,10,20,30,..,90,100,200,300,...etc.
-                """
-                return nb_done % (10**int(math.log10(nb_done))) == 0
-            print_if = f
+            print_if = self.default_print_if
         self.print_if = print_if
 
     def update(self, nb_done=None):
