@@ -1,4 +1,4 @@
-import re, sys, pickle, argparse, logging
+import re, sys, pickle, argparse, logging, time
 from pprint import pprint
 import wikipedia as wiki
 from bs4 import BeautifulSoup
@@ -138,15 +138,25 @@ if __name__ == '__main__':
     parser.add_argument('--max-cities', '-m', type=int)
     parser.add_argument('--skip-wiki', action='store_true', help='skip the'
                         ' wikipedia API calling part. mostly for debugging')
-    parser.add_argument('--wiki-sub', help='use wiki data previously fetched'
-                        ' in this file only')
     parser.add_argument('--force', action='store_true', help='don\'t ask'
                         ' before overwriting the output file')
+    parser.add_argument('--country', help='Will only look for cities in this'
+                        ' country. You can even filter more using --region')
+    parser.add_argument('--region', help='Will only look for cities in this'
+                        ' region. You need to also pass --country')
+    parser.add_argument('--append', action='store_true', help='Will add'
+                        ' unexisting cities to the already existing output'
+                        ' file. Ignored if it doesn\'t exist.')
     args = parser.parse_args()
 
     configure_logging()
 
-    dump_in = pickle.load(open(args.input_file))
+    if args.region is not None and args.country is None:
+        logging.warning('can not use --region without --country')
+        sys.exit()
+
+    with open(args.input_file) as f:
+        dump_in = pickle.load(f)
 
     if not (args.force or ask_before_overwrite(args.output_file)):
         sys.exit()
@@ -154,75 +164,98 @@ if __name__ == '__main__':
     if args.skip_wiki:
         logger.info('skipping wikipedia')
         for c in dump_in:
-            c.month_stats = {'avgHigh':range(12), 'precipitation': range(12)}
+            c.month_stats = {'avgHigh': [0] * 12, 'precipitation': [0] * 12}
             c.wiki_source = ''
-        dump_out = open(args.output_file, 'w')
-        pickle.dump(dump_in, dump_out)
+        with open(args.output_file, 'w') as dump_out:
+            pickle.dump(dump_in, dump_out)
         sys.exit()
 
-    wiki_sub = None
-    if args.wiki_sub is not None:
-        logger.info('using wiki data from %s', args.wiki_sub)
-        wiki_sub = {'{}/{}/{}'.format(x.name, x.region, x.country): x for x in
-                    pickle.load(open(args.wiki_sub))}
+    if args.append:
+        logger.info('updating in %s', args.output_file)
+        with open(args.output_file) as f:
+            new_data = {'{}/{}/{}'.format(x.name, x.region, x.country): x
+                        for x in pickle.load(f)}
+            logger.info('updating from %i cities', len(new_data))
+    else:
+        new_data = {}
 
+    nb_cities_at_start = len(new_data)
 
-    timer = Timer(len(dump_in))
-    new_data = []
+    # print every 100
+    def print_if(n):
+        if n < 100:
+            return Timer.default_print_if(n)
+        else:
+            return n % 100 == 0
+
+    def keep_city(city):
+        if (args.country is None or city.country == args.country) and \
+                (args.region is None or city.region == args.region):
+            return True
+        return False
+
+    nb_cities = sum(1 for x in dump_in if keep_city(x))
+    if args.max_cities is not None and args.max_cities < nb_cities:
+        nb_cities = args.max_cities
+    timer = Timer(nb_cities, print_if=print_if)
     nb_no_wiki = 0
     nb_no_climate = 0
+    nb_already_there = 0
     nb_coords_from_wiki = 0
     nb_coords_from_geonames = 0
-    for i, city in enumerate(dump_in):
-        timer.update()
-        if args.max_cities is not None and i+1 > args.max_cities:
+    nb_done = 0
+    for city in dump_in:
+        if args.max_cities is not None and nb_done >= args.max_cities:
             break
-        logger.debug(city)
+        if not keep_city(city):
+            continue
+        timer.update(nb_done)
+        logger.info(city)
 
-        if wiki_sub is not None:
-            city_id = '{}/{}/{}'.format(city.name, city.region, city.country)
-            if city_id in wiki_sub:
-                other_city = wiki_sub[city_id]
-                city.coords = other_city.coords
-                city.month_stats = other_city.month_stats
-                city.wiki_source = other_city.wiki_source
-                new_data.append(city)
+        city_id = '{}/{}/{}'.format(city.name, city.region, city.country)
+        if city_id in new_data:
+            nb_already_there += 1
             continue
 
         got_wiki = False
+        got_climate = False
         for potential_page in [city.name + ', ' + city.region,
                                city.name + ', ' + city.country]:
-            # should we also be looking for `city.name` by itself?
-            try:
-                page = wiki.page(potential_page)
-                got_wiki = True
+            for essaie in range(6):
+                # should we also be looking for `city.name` by itself?
+                try:
+                    page = wiki.page(potential_page)
+                    got_wiki = True
+                    html = page.html()
+                    climate_data = parse_climate_table(html)
+                    if climate_data is None:
+                        # logger.debug('no climate table for %s', city)
+                        break
+                    climate_data = parse_data(climate_data)
+                    got_climate = True
+                    break
+                except wiki.PageError:
+                    break
+                except wiki.exceptions.DisambiguationError:
+                    break
+                except Exception:
+                    logger.exception('unhandled exception while looking for wiki'
+                                    'page "%s"', potential_page)
+                    logger.info('sleeping %i seconds', essaie+1)
+                    time.sleep(essaie+1)
+            if got_climate:
                 break
-            except wiki.PageError:
-                # logger.info('didn\'t find wiki page "%s"', potential_page)
-                pass
-            except wiki.exceptions.DisambiguationError:
-                pass
-                # logger.info('landed on disambiguation for page "%s"',
-                #                  potential_page)
-                # logger.exception()
-            except Exception:
-                logger.info('unhandled exception while looking for wiki page'
-                            ' "%s"', potential_page)
-                logger.exception()
-                continue
 
-        if not got_wiki:
-            logger.info('didn\'t find a page for city %s', city)
-            nb_no_wiki += 1
-            continue
+        nb_done += 1
 
-        html = page.html()
-        climate_data = parse_climate_table(html)
-        if climate_data is None:
-            logger.debug('no climate table for %s', city)
+        if not got_climate:
+            logger.info('didn\'t find a climate table for city %s', city.name)
             nb_no_climate += 1
             continue
-        climate_data = parse_data(climate_data)
+        elif not got_wiki:
+            logger.info('didn\'t find a page for city %s', city.name)
+            nb_no_wiki += 1
+            continue
 
         # because the wikipedia library crashes there sometimes
         try:
@@ -241,20 +274,19 @@ if __name__ == '__main__':
         city.wiki_source = page.url
         city.coords = coords
 
-        new_data.append(city)
+        new_data[city_id] = city
 
-    # pprint(new_data)
-    # for city in new_data:
-        # print(city)
-        # pprint(city.month_stats)
-        # print(city.wiki_source)
-
-    logger.info('got %i cities', len(new_data))
+    logger.info('started with %i cities', nb_cities_at_start)
+    logger.info('went threw %i new cities', nb_done)
     logger.info('skipped %i cities with no wikipedia page', nb_no_wiki)
     logger.info('skipped %i cities with no climate table', nb_no_climate)
+    logger.info('skipped %i cities because we already had them',
+                nb_already_there)
+    logger.info('kept %i new cities', len(new_data) - nb_cities_at_start)
+    logger.info('wrote a total of %i cities', len(new_data))
     logger.info('got %i coordinates from the wikipedia API',
                 nb_coords_from_wiki)
-    logger.info('got %i coordinates from dbpedia',
+    logger.info('got %i coordinates from geonames',
                 nb_coords_from_geonames)
-    dump_out = open(args.output_file, 'w')
-    pickle.dump(new_data, dump_out)
+    with open(args.output_file, 'w') as dump_out:
+        pickle.dump(list(new_data.values()), dump_out)

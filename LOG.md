@@ -203,3 +203,9 @@ critères (population, isolation etc.)... en tous cas penser à ça!
 J'ai fini par faire mon idee de priority_index, j'ajoute les villes une après
 l'autre dans un ordre qui fait en sorte que chacun nouvelle ville est loin des
 autres. ça semble marcher pas pire!
+
+28 juillet
+==========
+Pour l'instant si on recherce "phnom penh, phnom penh" (ville, region) et qu'on
+trouve qqch, même si c'est du caca et que (ville, pays) retourne la bonne chose,
+on skip. corriger ça.
