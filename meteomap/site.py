@@ -40,6 +40,7 @@ def data_route():
 
         # get their data
         query = session.query(
+            sq.c.id,
             sq.c.name,
             func.ST_Y(cast(sq.c.location, Geometry())),
             func.ST_X(cast(sq.c.location, Geometry())),
@@ -58,11 +59,11 @@ def data_route():
         # print(query)
         # format what is returned from the query
         for row in query:
-            name = row[0]
-            cities[name]['lat'] = row[1]
-            cities[name]['long'] = row[2]
-            cities[name]['pop'] = row[3]
-            cities[name]['month_stats'][row[6]][row[4]] = row[5]
+            id = row[0]
+            cities[id]['name'] = row[1]
+            cities[id]['coords'] = (row[2], row[3])
+            cities[id]['pop'] = row[4]
+            cities[id]['month_stats'][row[7]][row[5]] = row[6]
         # from pprint import pprint
         # pprint(cities)
     return json.dumps(cities)

@@ -20,9 +20,8 @@ month = (new Date()).getMonth()
 $('#month').text(MONTHNAMES[month])
 
 updateCitiesMonth = ->
-    for c in cities
-        c.removeFromMap(map)
-        c.addToMap(month, map)
+    for k,c of cities
+        c.updateMonth(month)
         $('#month').text(MONTHNAMES[month])
 
 $('#prev_btn').click ->
@@ -103,41 +102,67 @@ class City
             return null
         return @meteo[code][month]
 
-    addToMap: (month, map) ->
+    iconHtml: (month) ->
         high = @getData('avgHigh', month)
         prec = @getData('precipitation', month)
         if prec is null
             prec = @getData('rain', month)
         html = "#{temperatureToHtml(high)}"
         html += "#{precipitationToHtml(prec)}"
+        return html
 
-        # FIXME update markers (and corresponding icons) when we move the map
-        # but only do $('icon').html(...) when we move the month slider
-        icon = L.divIcon({className: 'citydata', html: html, iconSize: null})
+    makeIcon: (month) ->
+        L.divIcon({className: 'citydata', html: @iconHtml(month), \
+                   iconSize: null})
+
+    updateMonth: (month) ->
+        icon = @makeIcon(month)
+        @marker.setIcon(icon)
+
+    addToMap: (month, map) ->
+        icon = @makeIcon(month)
+        # effectively, @marker are the last marker we added to
+        # a map...
         @marker = L.marker(@coords, {title:@name, icon:icon})
-        # @marker2 = L.marker(@coords)
         @marker.addTo map
-        # @marker2.addTo map
 
     removeFromMap: (map) ->
         map.removeLayer @marker
-        # map.removeLayer @marker2
 
-cities = []
-loadCities = (data) ->
-    # devrait pouvoir etre accelerer en faisant qqch d'intelligent, i.e.
-    # ne pas tout deleter a chaque fois. certains markers doivent normalement
-    # rester et on va les remettre anyway
-    while cities.length > 0
-        city = cities.pop()
-        city.removeFromMap map
+cities = {}
+loadCitiesFromJson = (jsonData) ->
+    new_ids = Object.keys(jsonData).sort()
+    old_ids = Object.keys(cities).sort()
 
-    for name, infos of data
-        coords = [infos.lat, infos.long]
-        monthly_stats = infos.month_stats
-        city = new City(name, coords, monthly_stats)
-        cities.push city
-        city.addToMap(month, map)
+    # nb_del=nb_new=nb_stay=0
+    ni=oi=0
+    while true
+        old_id = old_ids[oi]
+        new_id = new_ids[ni]
+        if not old_id? and not new_id?
+            break
+        # old city needs to be removed
+        else if not new_id? or old_id < new_id
+            cities[old_id].removeFromMap(map)
+            delete cities[old_id]
+            # ++nb_del
+            ++oi
+        # new city needs to be added
+        else if not old_id? or new_id < old_id
+            infos = jsonData[new_id]
+            cities[new_id] = new City(infos.name, infos.coords,
+                                      infos.month_stats)
+            # ++nb_new
+            cities[new_id].addToMap(month, map)
+            ++ni
+        else
+            ++oi
+            ++ni
+            # ++nb_stay
+
+    # console.log 'new', nb_new
+    # console.log 'del', nb_del
+    # console.log 'stay', nb_stay
 
 refreshCities = (e) ->
     bounds = map.getBounds()
@@ -147,7 +172,7 @@ refreshCities = (e) ->
         e: bounds.getEast()# - (bounds.getEast() - bounds.getWest())*.1
         w: bounds.getWest()# + (bounds.getEast() - bounds.getWest())*.1
 
-    $.get('data', coords, loadCities, 'json')
+    $.get('data', coords, loadCitiesFromJson, 'json')
 
     # debug
     # while frame.length > 0
