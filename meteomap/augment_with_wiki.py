@@ -277,11 +277,10 @@ if __name__ == '__main__':
         new_data[city_id] = city
 
     logger.info('started with %i cities', nb_cities_at_start)
-    logger.info('went threw %i new cities', nb_done)
+    logger.info('went threw %i new cities (%i were skipped because we already'
+                ' had them)', nb_done, nb_already_there)
     logger.info('skipped %i cities with no wikipedia page', nb_no_wiki)
     logger.info('skipped %i cities with no climate table', nb_no_climate)
-    logger.info('skipped %i cities because we already had them',
-                nb_already_there)
     logger.info('kept %i new cities', len(new_data) - nb_cities_at_start)
     logger.info('wrote a total of %i cities', len(new_data))
     logger.info('got %i coordinates from the wikipedia API',
