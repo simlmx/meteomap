@@ -66,13 +66,21 @@ class DistancesCache(object):
         return self.get_distance(i1, i2)
 
 
-def add_priority_index(session):
+def add_priority_index(session, fast_mode=False):
     """ decides the order in which the cities should be selected """
     cities = session.query(City,
                           func.ST_Y(cast(City.location, Geometry())),
                           func.ST_X(cast(City.location, Geometry()))) \
         .order_by(City.country_rank, City.region_rank, desc(City.population)) \
         .yield_per(1000).all()
+
+    if fast_mode:
+        logger.info('doing the fast version of priority index')
+        for i,city in enumerate(cities):
+            city[0].priority_index = i
+        session.commit()
+        return
+
 
     # FIXME prendre une distance approximative plus rapide à calculer
     # FIXME faire la distance sur la map ET NON sur le globe
@@ -154,6 +162,9 @@ if __name__ == '__main__':
                         ' entering new ones', action='store_true')
     parser.add_argument('--force-clear-cities', help='no prompt before clearing'
                        ' cities', action='store_true')
+    parser.add_argument('--fast-priority-index', help='faster but the cities '
+                        ' look less nice (less spread out) on the map',
+                        action='store_true')
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
 
@@ -196,4 +207,4 @@ if __name__ == '__main__':
         logger.info('filling the database')
         fill_cities(data, session)
         logger.info('adding the priority index')
-        add_priority_index(session)
+        add_priority_index(session, args.fast_priority_index)
