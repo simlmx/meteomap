@@ -1,12 +1,12 @@
 import pickle, argparse, sys, logging, math
-from collections import defaultdict
+import numpy
 from geoalchemy2.elements import WKTElement
 from geoalchemy2 import Geometry
 from sqlalchemy import desc, func, cast
 from meteomap.utils import (open, session_scope, Timer, are_you_sure,
                             configure_logging)
 from meteomap.tables import City, Stat, MonthlyStat
-from meteomap.city import lat_lon_distance
+from meteomap.city import lat_lon_fast_distance
 
 logger = logging.getLogger(__name__)
 
@@ -46,25 +46,6 @@ def fill_cities(data, session):
     # for the last monthly stats
     session.commit()
 
-class DistancesCache(object):
-    def __init__(self, objects, distance_fn):
-        self.timer = Timer(len(objects)**2 / 2)
-        self.distance_fn = distance_fn
-        self.objects = objects
-        self._distances = defaultdict(dict)
-
-    def get_distance(self, index1, index2):
-        try:
-            return self._distances[index1][index2]
-        except KeyError:
-            x = self._distances[index1][index2] = self.distance_fn(
-                self.objects[index1], self.objects[index2])
-            self.timer.update()
-            return x
-
-    def __call__(self, i1, i2):
-        return self.get_distance(i1, i2)
-
 
 def add_priority_index(session, fast_mode=False):
     """ decides the order in which the cities should be selected """
@@ -73,6 +54,11 @@ def add_priority_index(session, fast_mode=False):
                           func.ST_X(cast(City.location, Geometry()))) \
         .order_by(City.country_rank, City.region_rank, desc(City.population)) \
         .yield_per(1000).all()
+    # FIXME aussi filter comme dans cette query:
+    # select c.name || '/' || c.region || '/' || c.country as city,
+    # count(s.name) from city as c join monthly_stat as m on m.city_id = c.id
+    # join stat as s on m.stat_id = s.id group by city order by count desc;
+    # i.e. plus la ville a de data, plus on veut la voir!
 
     if fast_mode:
         logger.info('doing the fast version of priority index')
@@ -82,71 +68,60 @@ def add_priority_index(session, fast_mode=False):
         return
 
 
-    # FIXME prendre une distance approximative plus rapide à calculer
-    # FIXME faire la distance sur la map ET NON sur le globe
     def distance_fn(tuple1, tuple2):
         _,lat1,lon1 = tuple1
         _,lat2,lon2 = tuple2
-        return lat_lon_distance(lat1, lon1, lat2, lon2)
+        return lat_lon_fast_distance(lat1, lon1, lat2, lon2)
 
     indices = [0]
     indices_left = list(range(1,len(cities)))
-    distances = DistancesCache(cities, distance_fn)
+
+    # pre-calculate the distances between all the cities
+    logger.info('pre-calculating the distances between all cities')
+    lats = numpy.array([c[1] for c in cities])
+    lons = numpy.array([c[2] for c in cities])
+    distances = lat_lon_fast_distance(lats.reshape(-1,1),
+                                      lons.reshape(-1,1),
+                                      lats.reshape(1,-1),
+                                      lons.reshape(1,-1))
+    # each city is compared to all the previous ones (maximum)
+    timer = Timer(len(indices_left))
     while len(indices_left) > 0:
         # let's find the next city amongst the next candidates
-        mean_dist = 0.
-        mean_dist_sq = 0.
-        std_dist = None
-        max_dist = None
-        max_dist_idx = None
+        max_dist = 0.
+        max_dist_idx = 0
         logger.debug('\nlooking for the next one')
-        z = None
         for no_candidate, i_left in enumerate(indices_left):
             # find how close is the nearest neighbor for this city
             # we are looking for the city with the fartest nearest neighbor
             dist_nearest_neighbor = 1e9
+            # get the distance of our candidate to the closest (already chosen)
+            # city
+            too_close = False
             for i_chosen in indices:
-                cur_dist = distances(i_left, i_chosen)
-                if cur_dist < dist_nearest_neighbor:
-                    dist_nearest_neighbor = cur_dist
+                cur_dist = distances[i_chosen, i_left]
+                if cur_dist <= max_dist:
+                    too_close = True
+                    break
+                dist_nearest_neighbor = min(dist_nearest_neighbor, cur_dist)
+            # we don't compare the distance of this candidate with all cities
+            # if it's closer to (already chosen) city than our best candidate
+            # so far
+            if too_close:
+                continue
+            # dist_nearest_neighbor = numpy.min(distances[indices][:,i_left])
             logger.debug('candidate %i has a city at %f', no_candidate,
                          dist_nearest_neighbor)
 
-            if max_dist is None or dist_nearest_neighbor > max_dist:
+            if dist_nearest_neighbor > max_dist:
                 logger.debug('(new max)')
                 max_dist = dist_nearest_neighbor
                 max_dist_idx = no_candidate
 
-            mean_dist = (mean_dist * no_candidate + dist_nearest_neighbor) \
-                / (no_candidate + 1)
-            mean_dist_sq = (mean_dist_sq * no_candidate
-                            + dist_nearest_neighbor**2) \
-                / (no_candidate + 1)
-            logger.debug('updated mean: %f', mean_dist)
-
-            if no_candidate > 0:
-                std_dist = math.sqrt(mean_dist_sq - (mean_dist)**2) \
-                    * (no_candidate + 1) / no_candidate  # correction for sample
-                if std_dist == 0.:
-                    continue
-                z = (max_dist - mean_dist) / std_dist
-            else:
-                continue
-
-            logger.debug('updated std: %f', std_dist)
-            logger.debug('z of max: %f', z)
-
-            # check if our max is big enough. this is to speed up things
-            if z > 2.:
-                logger.debug('choosing the max %i, z=%f',
-                                indices_left[max_dist_idx], z)
-                indices.append(indices_left.pop(max_dist_idx))
-                break
-        else:
-            logger.debug('choosing the max one %i at the end', max_dist_idx)
-            indices.append(indices_left.pop(max_dist_idx))
+        indices.append(indices_left.pop(max_dist_idx))
         logger.debug('done, chosen: %i, remaining: %i', len(indices),
                      len(indices_left))
+        timer.update()
 
     assert len(indices) == len(cities)
     for priority_index, i in enumerate(indices):
@@ -173,6 +148,10 @@ if __name__ == '__main__':
     with session_scope() as session:
         nb_cities = session.query(City).count()
 
+    if args.force_clear_cities and not args.clear_cities:
+        print('You must specify the --clear-cities argument if you want to'
+              ' use the --force-clear-cities argument')
+
     if nb_cities > 0:
         if args.clear_cities:
             # Here we are erasing already existing cities before inserting new
@@ -180,8 +159,10 @@ if __name__ == '__main__':
             if args.force_clear_cities or are_you_sure(
                     'Are you sure you want to erase all the existing cities?'):
                 with session_scope() as session:
+                    logger.info('deleting cities')
                     session.query(MonthlyStat).delete()
                     session.query(City).delete()
+                    session.commit()
             else:
                 print('Did nothing.')
                 sys.exit()
@@ -197,6 +178,7 @@ if __name__ == '__main__':
                 print('Did nothing.')
                 sys.exit()
 
+    logger.info('loading the data')
     with open(args.input_file) as f:
         data = pickle.load(f)
 
@@ -205,6 +187,6 @@ if __name__ == '__main__':
 
     with session_scope() as session:
         logger.info('filling the database')
-        fill_cities(data, session)
+        # fill_cities(data, session)
         logger.info('adding the priority index')
         add_priority_index(session, args.fast_priority_index)

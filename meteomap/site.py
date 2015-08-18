@@ -48,7 +48,7 @@ def data_route():
             MonthlyStat.value, Stat.code) \
             .join(MonthlyStat) \
             .join(Stat) \
-            .filter(Stat.code.in_(['avgHigh', 'precipitation']))
+            .filter(Stat.code.in_(['avgHigh', 'precipitation', 'monthlySunHours']))
 
         if month is not None:
             query = query.filter(MonthlyStat.month == month)
@@ -67,6 +67,16 @@ def data_route():
         # from pprint import pprint
         # pprint(cities)
     return json.dumps(cities)
+
+
+@app.route('/stats')
+def stats_route():
+    with session_scope() as session:
+        infos = {getattr(x, 'code'): {c.name: getattr(x, c.name)
+                                      for c in x.__table__.columns
+                                      if c.name not in ['id', 'code']}
+                 for x in session.query(Stat)}
+    return json.dumps(infos)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,181 @@
+/* DEBUG */
+/* html * { */
+  /* border:1px solid; */
+/* } */
+/* .row { */
+  /* background:yellow; */
+/* } */
+
+/* .col-md-8, .col-md-4, .col-md-12 { */
+  /* background:orange; */
+/* } */
+
+/* table * { */
+  /* border:1px blue; */
+  /* background-color:blue; */
+/* } */
+
+/* html, body { */
+  /* background-color:red; */
+/* } */
+
+/* #container-all { */
+  /* background-color:turquoise; */
+/* } */
+
+/* nav { */
+  /* background-color:purple; */
+/* } */
+
+/* #map { */
+  /* background-color:green; */
+/* } */
+/* END OF DEBUG */
+
+
+html, body {
+  height:100%;
+  padding:0;
+  margin:0;
+}
+
+/* smaller nav bar
+ * http://stackoverflow.com/a/18602076/1067132 */
+.navbar-nav > li > a, .navbar-brand {
+    padding-top:4px;
+    padding-bottom:0;
+    height: 28px;
+}
+.navbar {
+  min-height:10px;
+}
+
+footer {
+  height:5%;
+}
+
+/*inutile?*/
+#container-all {
+  height:calc(100% - 28px - 5%);
+}
+
+
+#all-row {
+  height:100%;
+}
+
+#left-col {
+  height:100%;
+}
+
+
+
+#map {
+  min-height:100%;
+  height:100%;
+  border:1px solid;
+}
+
+#month {
+  font-size: 20pt;
+  text-align: center;
+  display: inline-block;
+  width: 40%;
+}
+
+#month-control {
+  display: inline-block;
+}
+
+#prev_btn, #next_btn {
+  width:50px;
+  height:50px;
+}
+
+.temperature {
+  font-size: 10pt;
+  /* color: black; */
+  display: inline-block;
+}
+
+.citydata {
+  margin-left:-100px;
+  margin-top:0px;
+  width:200px;
+  font-size:16pt;
+
+  display:inline-block;
+  
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.meteo-table * {
+  font-size:8pt;
+}
+
+.meteo-table th {
+  width:20%;
+}
+
+.meteo-table td.stat-table-data-col {
+  width: 100px;
+  font-weight: bold;
+  text-align: center;
+  vertical-align: middle;
+  word-break:break-all;
+  padding:0px;
+}
+
+#prev-next-btns-row {
+  text-align:center;
+  height:6%;
+}
+
+/* TODO the buttons are not really vertically centered */
+#prev-next-btns-col {
+  display: table-cell;
+  vertical-align: middle;
+  height:100%;
+}
+
+#right-col {
+  height:100%;
+}
+
+#meteo-tables-row {
+  height:94%;
+}
+
+#meteo-tables-col {
+  overflow-y: scroll; 
+  height:100%;
+}
+
+#meteo-tables-controls {
+  text-align:right;
+}
+
+.meteo-table-header {
+  height:28px;
+  margin-right:10px;
+}
+
+#meteo-tables-clear-all {
+  margin-bottom:10px;
+}
+
+#meteo-tables-placeholder {
+  text-align:center;
+}
+
+#meteo-tables-placeholder p {
+  width:50%;
+  margin:auto;
+  margin-top:50%;
+}
+
+#title {
+  text-align:center;
+}

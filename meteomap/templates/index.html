@@ -1,21 +1,88 @@
 <!DOCTYPE html>
 <html>
   <head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title> meteomap </title>
-     <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
-     <link href="static/site.css" rel="stylesheet" type="text/css">
-     <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+    <link href="static/css/site.css" rel="stylesheet" type="text/css">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
   </head>
   <body>
-    <table width=100%>
-      <tr><td><div id=map></div></td></tr>
-      <tr><td>
-          <button id=prev_btn> < </button>
-          <div id=month></div>
-          <button id=next_btn> > </button>
-        </td></tr>
-    </table>
-    <script src="static/jquery-1.11.3.min.js"></script>
-    <script src="static/map.js"></script>
+    <!-- <h1 id=title> Meteomap </h1> -->
+    <!-- <nav class="navbar navbar-static-top"> -->
+      <!-- <div class="container"> -->
+        <!-- <div class="navbar-header"> -->
+          <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar"> -->
+            <!-- <span class="sr-only">Toggle navigation</span> -->
+            <!-- <span class="icon-bar"></span> -->
+            <!-- <span class="icon-bar"></span> -->
+            <!-- <span class="icon-bar"></span> -->
+          <!-- </button> -->
+          <!-- <a class="navbar-brand" href="#">MeteoMap</a> -->
+        <!-- </div> -->
+        <!-- <div id="navbar" class="collapse navbar-collapse"> -->
+          <!-- <ul class="nav navbar-nav"> -->
+            <!-- <li class="active"><a href="#">Home</a></li> -->
+            <!-- <li><a href="#about">About</a></li> -->
+            <!-- <li><a href="#contact">Contact</a></li> -->
+          <!-- </ul> -->
+        <!-- </div><!--/.nav-collapse -->
+      <!-- </div> -->
+    <!-- </nav> -->
+    <br>
+    <div id="container-all" class="container-fluid fill">
+      <div id="all-row" class="row fill">
+        <div id="left-col" class="col-md-8 fill">
+          <div id="map"></div>
+          <br>
+        </div>
+        <div id="right-col" class="col-md-4">
+          <div id="meteo-tables-row" class="row">
+            <div id="meteo-tables-col" class="col-md-12">
+              <div id="meteo-tables-controls">
+                <button type="button" class="btn btn-default btn-xs" id="meteo-tables-clear-all" style="display:none"> 
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                  Clear all
+                </button>
+              </div>
+              <div id="meteo-tables-placeholder">
+                <p class="bg-info">
+                  Click on cities on the map to view their stats for the whole year
+                </p>
+              </div>
+              <div id="meteo-tables">
+              </div>
+            </div>
+          </div>
+          <div class="row" id="prev-next-btns-row">
+            <div id="prev-next-btns-col" class="col-md-12">
+              <button type="button" class="btn btn-default", id="prev-btn">
+               <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+              </button>
+              <div id=month></div>
+              <button type="button" class="btn btn-default", id="next-btn">
+                <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <footer class="text-right"> -->
+    <!--   <p>&copy; Simon Lemieux 2015</p> -->
+    <!-- </footer> -->
+    <script src="static/js/jquery-1.11.3.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    <script src="static/js/map.js"></script>
   </body>
 </html>
