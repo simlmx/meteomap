@@ -1,26 +1,17 @@
 /* DEBUG */
-/* html * { */
+/* * { */
   /* border:1px solid; */
 /* } */
 /* .row { */
   /* background:yellow; */
 /* } */
 
-/* .col-md-8, .col-md-4, .col-md-12 { */
+/* #prev-next-ctrls { */
   /* background:orange; */
-/* } */
-
-/* table * { */
-  /* border:1px blue; */
-  /* background-color:blue; */
 /* } */
 
 /* html, body { */
   /* background-color:red; */
-/* } */
-
-/* #container-all { */
-  /* background-color:turquoise; */
 /* } */
 
 /* nav { */
@@ -30,71 +21,100 @@
 /* #map { */
   /* background-color:green; */
 /* } */
+/* #left-col { */
+  /* background:yellow; */
+/* } */
+/* #right-col { */
+  /* background:blue; */
+/* } */
+/* #meteo-tables-container { */
+  /* background:green; */
+/* } */
+/* table { */
+  /* background:pink; */
+/* } */
 /* END OF DEBUG */
 
 
 html, body {
   height:100%;
+  width:100%;
   padding:0;
   margin:0;
 }
 
 /* smaller nav bar
  * http://stackoverflow.com/a/18602076/1067132 */
-.navbar-nav > li > a, .navbar-brand {
-    padding-top:4px;
-    padding-bottom:0;
-    height: 28px;
-}
-.navbar {
-  min-height:10px;
+/* .navbar-nav > li > a, .navbar-brand { */
+/*     padding-top:4px; */
+/*     padding-bottom:0; */
+/*     height: 28px; */
+/* } */
+/* .navbar { */
+/*   min-height:10px; */
+/* } */
+
+/* footer { */
+/*   height:5%; */
+/* } */
+
+/*
+ * MAP PANE
+ * */
+
+#container {
+  width:100%;
+  height:100%;
+  border-collapse: collapse;
 }
 
-footer {
-  height:5%;
+#left-col, #right-col, #prev-next-ctrls {
+  padding:15px;
 }
 
-/*inutile?*/
-#container-all {
-  height:calc(100% - 28px - 5%);
-}
-
-
-#all-row {
+#row1 {
   height:100%;
 }
-
+#row2 {
+  margin-bottom:200px;
+}
 #left-col {
-  height:100%;
+  width:100%;
 }
 
-
+#map-wrap {
+  height:100%;
+  width:100%;
+}
 
 #map {
-  min-height:100%;
-  height:100%;
   border:1px solid;
+  height:100%;
+  width:100%;
+  min-width:500px;
+}
+
+#prev-next-ctrls {
+  text-align:center;
+  /* TODO the buttons are not really vertically centered */
+  vertical-align:middle;
+  min-width:300px;
 }
 
 #month {
-  font-size: 20pt;
+  font-size: 18pt;
   text-align: center;
   display: inline-block;
-  width: 40%;
+  min-width:150px;
+  max-width:400px;
 }
 
-#month-control {
-  display: inline-block;
-}
-
-#prev_btn, #next_btn {
-  width:50px;
-  height:50px;
-}
+/*
+ * MAP ELEMENTS
+ */
 
 .temperature {
   font-size: 10pt;
-  /* color: black; */
   display: inline-block;
 }
 
@@ -111,71 +131,87 @@ footer {
   align-items:center;
 }
 
-.meteo-table * {
-  font-size:8pt;
-}
-
-.meteo-table th {
-  width:20%;
-}
-
-.meteo-table td.stat-table-data-col {
-  width: 100px;
-  font-weight: bold;
-  text-align: center;
-  vertical-align: middle;
-  word-break:break-all;
-  padding:0px;
-}
-
-#prev-next-btns-row {
-  text-align:center;
-  height:6%;
-}
-
-/* TODO the buttons are not really vertically centered */
-#prev-next-btns-col {
-  display: table-cell;
-  vertical-align: middle;
-  height:100%;
-}
-
-#right-col {
-  height:100%;
-}
-
-#meteo-tables-row {
-  height:94%;
-}
-
-#meteo-tables-col {
-  overflow-y: scroll; 
-  height:100%;
-}
-
-#meteo-tables-controls {
+/*
+ * TABLES PANE
+ * */
+#meteo-tables-controls{
   text-align:right;
 }
 
-.meteo-table-header {
-  height:28px;
-  margin-right:10px;
+#right-col {
+  width:1%;
+  height:100%;
 }
 
-#meteo-tables-clear-all {
-  margin-bottom:10px;
+#meteo-tables-container {
+  height:100%;
+  overflow-y:scroll;
+  width:auto;
+}
+
+.meteo-table-container {
+  margin-top:10px;
+}
+
+.meteo-table * {
+  padding:0;
+  margin:0;
+}
+
+.meteo-table tr {
+  width:auto;
+  height:34px;
+  border-right: 1px solid white;
+}
+
+.meteo-table th {
+  width:100px;
+  min-width:100px;
+  font-size:8pt;
+  text-align:center;
+  border-top: 1px solid lightgray;
+}
+
+.meteo-table td {
+  border-top: 1px solid white;
+  width:34px;
+  min-width:34px;
+  text-align:center;
+  font-size:9pt;
+  overflow:hidden;
+  padding:1px;
+  font-weight:500;
+}
+
+.meteo-table-header {
+  height:22px;
+  font-size:10pt;
+}
+.meteo-table-close {
+  float:right;
+  text-align:center;
 }
 
 #meteo-tables-placeholder {
+  width:200px;
   text-align:center;
+  position:relative;
+  top:50%; 
+  transform:translateY(-50%);
+  -webkit-transform:translateY(-50%);
 }
 
-#meteo-tables-placeholder p {
-  width:50%;
-  margin:auto;
-  margin-top:50%;
-}
-
-#title {
-  text-align:center;
+@media (max-width: 500px) {
+  /* #left-col { */
+    /* min-width:600px; */
+  /* } */
+  #right-col {
+    display:none;
+  }
+  #left-col, #right-col, #prev-next-ctrls {
+    padding:5px;
+  }
+  #map {
+    min-width:100%;
+  }
 }

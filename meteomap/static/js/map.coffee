@@ -8,13 +8,15 @@ MAX_RED = [204,0,0]
 MIN_BLUE = [230,230,255]
 MAX_BLUE = [0,0,204]
 MIN_GREEN = [230,255,230]
+MEDIUM_GREEN = [20,150,20]
 MAX_GREEN = [0,120,0]
+
 BLACK = [0,0,0]
 WHITE = [255,255,255]
 
 global =
     stats_info: null
-    cities:null
+    cities: {}
     map:null
 
 # get the Stat infos
@@ -39,7 +41,7 @@ updateMeteoTables = (month) ->
     $(".stat-table-data-col-#{month}").css('border', '1px solid')
 
 updateCitiesMonth = (month) ->
-    for k,c of cities
+    for k,c of global.cities
         c.updateMonth(month)
         $('#month').text(MONTHNAMES[month])
 
@@ -105,7 +107,10 @@ getColor = (code, value) ->
         else
             rgb = gradient(MAX_BLUE, MIN_BLUE, -15, 10, value)
     else if code == 'precipitation'
-        rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 250, value)
+        if value < 400
+            rgb = gradient(MIN_GREEN, MEDIUM_GREEN, 0, 400, value)
+        else
+            rgb = gradient(MEDIUM_GREEN, MAX_GREEN, 400, 800, value)
     else if code == 'monthlySunHours'
         gray = [180,175,100]
         yellow = [255, 250, 100]
@@ -162,20 +167,20 @@ class City
         map.removeLayer @marker
 
     addToTable: =>
-        container = $('<div class="meteo-tables-div">').appendTo('#meteo-tables')
+        container = $('<div class="meteo-table-container">').appendTo('#meteo-tables')
             .hover((-> $(this).find('.btn').show()),
                    (-> $(this).find('.btn').hide()))
-        btn = $('<button type="button" class="btn btn-default btn-xs" style="display:none; float:right">')
+        btn = $('<button type="button" class="btn btn-danger btn-xs meteo-table-close" style="display:none">')
             .append('<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>')
             .click(-> $(this).parent().parent().remove())
  
         header = $('<div class="meteo-table-header">').append("<strong>#{@name}</strong>").append(btn).appendTo(container)
-        table = $('<table class="table table-condensed meteo-table">')
+        table = $('<table class="meteo-table">')
                 .appendTo(container)
         for code, data of @meteo
             stat_infos = global.stats[code]
             tr = $('<tr>').appendTo(table)
-            td = $('<th>').html("#{stat_infos['name']} (#{stat_infos['unit']})")
+            $('<th>').html("#{stat_infos['name']} (#{stat_infos['unit']})")
                           .appendTo(tr)      
             for month in [0...12]
                 value = data[month]
@@ -194,11 +199,10 @@ class City
         
 
 
-cities = {}
 loadCitiesFromJson = (jsonData) ->
     city_data = jsonData
     new_ids = Object.keys(city_data).sort()
-    old_ids = Object.keys(cities).sort()
+    old_ids = Object.keys(global.cities).sort()
 
     # nb_del=nb_new=nb_stay=0
     ni=oi=0
@@ -209,17 +213,17 @@ loadCitiesFromJson = (jsonData) ->
             break
         # old city needs to be removed
         else if not new_id? or old_id < new_id
-            cities[old_id].removeFromMap(global.map)
-            delete cities[old_id]
+            global.cities[old_id].removeFromMap(global.map)
+            delete global.cities[old_id]
             # ++nb_del
             ++oi
         # new city needs to be added
         else if not old_id? or new_id < old_id
             infos = city_data[new_id]
-            cities[new_id] = new City(infos.name, infos.coords,
+            global.cities[new_id] = new City(infos.name, infos.coords,
                                       infos.month_stats)
             # ++nb_new
-            cities[new_id].addToMap(global.month, global.map)
+            global.cities[new_id].addToMap(global.month, global.map)
             ++ni
         else
             ++oi
