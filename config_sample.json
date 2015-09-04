@@ -16,6 +16,6 @@
             "pass": "your email password"
         }
     },
-    "nb_cities_at_once": 35,
+    "max_nb_cities_at_once": 35,
     "maintenance": false
 }

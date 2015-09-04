@@ -1,37 +1,30 @@
 /* DEBUG */
 /* * { */
-  /* border:1px solid; */
+/*   border:1px solid; */
 /* } */
 /* .row { */
-  /* background:yellow; */
+/*   background:yellow; */
 /* } */
 
-/* #prev-next-ctrls { */
-  /* background:orange; */
+/* #bottom { */
+/*   background:orange; */
 /* } */
 
 /* html, body { */
-  /* background-color:red; */
-/* } */
-
-/* nav { */
-  /* background-color:purple; */
+/*   background-color:red; */
 /* } */
 
 /* #map { */
-  /* background-color:green; */
+/*   background-color:green; */
 /* } */
 /* #left-col { */
-  /* background:yellow; */
+/*   background:yellow; */
 /* } */
-/* #right-col { */
-  /* background:blue; */
+/* #right{ */
+/*   background:blue; */
 /* } */
-/* #meteo-tables-container { */
-  /* background:green; */
-/* } */
-/* table { */
-  /* background:pink; */
+/* .meteo-table-container { */
+/*   background:pink; */
 /* } */
 /* END OF DEBUG */
 
@@ -68,37 +61,47 @@ html, body {
   border-collapse: collapse;
 }
 
-#left-col, #right-col, #prev-next-ctrls {
-  padding:15px;
+.left-exp-width {
+  width: calc(100% - 443px);
+  min-width: calc(100% - 443px);
 }
 
-#row1 {
-  height:100%;
+.left-width {
+  width: calc(100% - 200px);
 }
-#row2 {
-  margin-bottom:200px;
-}
-#left-col {
-  width:100%;
+
+.left{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: calc(100% - 50px);
 }
 
 #map-wrap {
-  height:100%;
+  height: calc(100% - 50px);
+  /* height:100%; */
   width:100%;
+  padding:10px;
 }
 
 #map {
   border:1px solid;
   height:100%;
   width:100%;
-  min-width:500px;
+  /* min-width:500px; */
 }
 
-#prev-next-ctrls {
-  text-align:center;
+#bottom {
+  /* text-align:center; */
   /* TODO the buttons are not really vertically centered */
-  vertical-align:middle;
+  /* vertical-align:middle; */
   min-width:300px;
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
+  height: 50px;
+  text-align: center;
 }
 
 #month {
@@ -113,23 +116,38 @@ html, body {
  * MAP ELEMENTS
  */
 
-.temperature {
-  font-size: 10pt;
-  display: inline-block;
-}
-
 .citydata {
-  margin-left:-100px;
-  margin-top:0px;
-  width:200px;
-  font-size:16pt;
-
-  display:inline-block;
+  margin-left:-13px;
+  margin-top:-26px;
+  width:auto;
+  text-align:center;
   
-  display:inline-flex;
-  justify-content:center;
-  align-items:center;
+  /* display:inline-flex; */
+  /* justify-content:center; */
+  /* align-items:center; */
 }
+
+
+ul {
+  list-style-type:none;
+  background:black;
+  height:auto;
+  padding:0;
+  margin:0;
+}
+
+.temperature {
+}
+li {
+  font-size: 8pt;
+  margin:0;
+  padding:0;
+  display:inline-block;
+  width:26px;
+  text-align:center;
+  border:1px solid black;
+}
+
 
 /*
  * TABLES PANE
@@ -138,19 +156,32 @@ html, body {
   text-align:right;
 }
 
-#right-col {
-  width:1%;
-  height:100%;
+.right-exp-width {
+  width: 443px;
+  min-width: 443px;
+}
+.right-width {
+  width: 200px;
 }
 
-#meteo-tables-container {
-  height:100%;
-  overflow-y:scroll;
-  width:auto;
+.right {
+  /* height:100%; */
+  /* overflow-y:scroll; */
+  /* width:auto; */
+
+    position: absolute;
+    top: 10px;
+    right: 0px;
+    overflow: auto;
+    height: calc(100% - 50px);
+    /* padding:10px; */
 }
+
 
 .meteo-table-container {
   margin-top:10px;
+  /* margin-right:10px; */
+  margin-right:10px;
 }
 
 .meteo-table * {
@@ -160,13 +191,13 @@ html, body {
 
 .meteo-table tr {
   width:auto;
-  height:34px;
+  height:22px;
   border-right: 1px solid white;
 }
 
 .meteo-table th {
-  width:100px;
-  min-width:100px;
+  width:120px;
+  min-width:120px;
   font-size:8pt;
   text-align:center;
   border-top: 1px solid lightgray;
@@ -174,10 +205,10 @@ html, body {
 
 .meteo-table td {
   border-top: 1px solid white;
-  width:34px;
-  min-width:34px;
+  width:26px;
+  min-width:26px;
   text-align:center;
-  font-size:9pt;
+  font-size:8pt;
   overflow:hidden;
   padding:1px;
   font-weight:500;
@@ -199,19 +230,24 @@ html, body {
   top:50%; 
   transform:translateY(-50%);
   -webkit-transform:translateY(-50%);
+  padding-right:10px;
 }
 
-@media (max-width: 500px) {
+.highlight-city {
+  border:1px solid black;
+}
+
+/* @media (max-width: 500px) { */
   /* #left-col { */
     /* min-width:600px; */
   /* } */
-  #right-col {
-    display:none;
-  }
-  #left-col, #right-col, #prev-next-ctrls {
-    padding:5px;
-  }
-  #map {
-    min-width:100%;
-  }
-}
+/*   #right-col { */
+/*     display:none; */
+/*   } */
+/*   #left-col, #right-col, #prev-next-ctrls { */
+/*     padding:5px; */
+/*   } */
+/*   #map { */
+/*     min-width:100%; */
+/*   } */
+/* } */

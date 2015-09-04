@@ -2,6 +2,9 @@
     # 'Oct', 'Nov', 'Dec']
 MONTHNAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
     'August', 'September', 'October', 'November', 'December']
+CODES = ['avgHigh', 'avgLow', 'precipitation', 'precipitationDays', 'monthlySunHours']
+
+NB_CITIES_PER_100PX_SQ = 1
 
 MIN_RED = [255,230,230]
 MAX_RED = [204,0,0]
@@ -40,6 +43,26 @@ updateMeteoTables = (month) ->
     $(".stat-table-data-col").css('border', 'none')
     $(".stat-table-data-col-#{month}").css('border', '1px solid')
 
+updateMeteoTablesWidth = ->
+    n = $('.meteo-table').length
+    if n > 0
+        $('#meteo-tables-placeholder').hide()
+        $('.right').addClass('right-exp-width')
+        $('.right').removeClass('right-width')
+        $('.left').addClass('left-exp-width')
+        $('.left').removeClass('left-width')
+    else
+        $('#meteo-tables-placeholder').show()
+        $('#meteo-tables-clear-all').hide()
+        for k,c of global.cities
+            c.inTable = false
+        $('.right').removeClass('right-exp-width')
+        $('.right').addClass('right-width')
+        $('.left').removeClass('left-exp-width')
+        $('.left').addClass('left-width')
+
+    
+
 updateCitiesMonth = (month) ->
     for k,c of global.cities
         c.updateMonth(month)
@@ -63,8 +86,8 @@ $('#next-btn').click ->
 
 $('#meteo-tables-clear-all').click ->
     $('#meteo-tables').empty()
-    $('#meteo-tables-clear-all').hide()
-    $('#meteo-tables-placeholder').show()
+    updateMeteoTablesWidth()
+
 
 rgb2hex = (red, green, blue) ->
     rgb = blue | (green << 8) | (red << 16)
@@ -101,7 +124,7 @@ gradient = (rgb_min, rgb_max, min, max, val) ->
 getColor = (code, value) ->
     if not value?
         return WHITE
-    if code == 'avgHigh'
+    if code == 'avgHigh' or code == 'avgLow'
         if value > 10
             rgb = gradient(MIN_RED, MAX_RED, 10, 40, value)
         else
@@ -111,6 +134,8 @@ getColor = (code, value) ->
             rgb = gradient(MIN_GREEN, MEDIUM_GREEN, 0, 400, value)
         else
             rgb = gradient(MEDIUM_GREEN, MAX_GREEN, 400, 800, value)
+    else if code == 'precipitationDays'
+        rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 30, value)
     else if code == 'monthlySunHours'
         gray = [180,175,100]
         yellow = [255, 250, 100]
@@ -122,30 +147,34 @@ getColor = (code, value) ->
 
 
 colorToHtml = (value, color, code) ->
-    div = $('<div>').addClass('temperature')
-    if not value?
-        return div.html()
-    div.css('background-color', rgb2hex(color...))
-    div.css('color', rgb2hex(BLACK...))
-    div.html(value + " " + global.stats[code].unit)
-    return div[0].outerHTML
+    li = $('<li>').addClass('temperature')
+    li.css('background-color', rgb2hex(color...))
+    li.css('color', rgb2hex(BLACK...))
+    li.html(value) #+ " " + global.stats[code].unit)
+    return li#[0].outerHTML
 
 
 class City
-    constructor: (@name, @coords, @meteo) ->
+    constructor: (@name, @country, @coords, @meteo) ->
+        @inTable = false
 
     getData: (code, month) ->
         if code not of @meteo
             return null
         return @meteo[code][month]
 
-    iconHtml: (month) ->
-        html = ""
-        for code in ['avgHigh', 'precipitation', 'monthlySunHours']
+    iconHtml: (month) =>
+        div = $('<div>')
+        # div.append(@name)
+        ul = $('<ul>').appendTo(div)
+        for code in CODES
             value = @getData(code, month)
+            if not value?
+                continue
+            value = @formatValue(value)
             color = getColor(code, value)
-            html += colorToHtml(value, color, code)
-        return html
+            ul.append(colorToHtml(value, color, code))
+        return div[0].outerHTML
 
     makeIcon: (month) ->
         L.divIcon({className: 'citydata', html: @iconHtml(month), \
@@ -162,28 +191,57 @@ class City
         @marker = L.marker(@coords, {title:@name, icon:icon})
         @marker.addTo map
         @marker.on('click', @addToTable)
+        # @marker2 = L.marker(@coords, {title:'debug' + @name})
+        # @marker2.addTo map
 
     removeFromMap: (map) ->
         map.removeLayer @marker
 
     addToTable: =>
-        container = $('<div class="meteo-table-container">').appendTo('#meteo-tables')
+        if @inTable
+            return
+        container = $('<div class="meteo-table-container">')
+            .appendTo('#meteo-tables')
             .hover((-> $(this).find('.btn').show()),
                    (-> $(this).find('.btn').hide()))
-        btn = $('<button type="button" class="btn btn-danger btn-xs meteo-table-close" style="display:none">')
-            .append('<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>')
-            .click(-> $(this).parent().parent().remove())
+            # pas top shape encore ca
+            # .hover((=> $("#name-#{@name}").addClass('highlight-city')),
+            #        (=> $("#name-#{@name}").removeClass('highlight-city')))
+
+        btn = $('<button type="button" class="btn btn-danger btn-xs' +
+                ' meteo-table-close" style="display:none">')
+            .append('<span class="glyphicon glyphicon-remove"' +
+                ' aria-hidden="true"></span>')
+            .click(->
+                $(this).parent().parent().remove()
+                updateMeteoTablesWidth())
+            .click(=> @inTable = false)
  
-        header = $('<div class="meteo-table-header">').append("<strong>#{@name}</strong>").append(btn).appendTo(container)
+        header = $('<div class="meteo-table-header">')
+            .append("<strong>#{@name}, #{@country}</strong>")
+            .append(btn)
+            .appendTo(container)
+
         table = $('<table class="meteo-table">')
                 .appendTo(container)
-        for code, data of @meteo
+
+        for code in CODES
+            if code not of @meteo
+                continue
+            data = @meteo[code]
             stat_infos = global.stats[code]
+            stat_name = stat_infos['name']
+            # FIXME remove the next two lines when the name is adjusted in the
+            # database
+            if stat_name == 'Precipitation Days'
+                stat_name = 'Precip. Days'
             tr = $('<tr>').appendTo(table)
-            $('<th>').html("#{stat_infos['name']} (#{stat_infos['unit']})")
+            $('<th>').html("#{stat_name} (#{stat_infos['unit']})")
                           .appendTo(tr)      
             for month in [0...12]
                 value = data[month]
+                if value >= 100
+                    value = @formatValue(value)
                 $('<td>').html(value).css('background-color',
                               rgb2hex(getColor(code,value)...))
                          .addClass('stat-table-data-col')
@@ -192,7 +250,14 @@ class City
 
         $('#meteo-tables-clear-all').show()
         updateMeteoTables(global.month)
-        $('#meteo-tables-placeholder').hide()
+        updateMeteoTablesWidth()
+        @inTable = true
+
+    formatValue: (val) ->
+        if val >= 100
+            return val.toPrecision(3)
+        return val # to string?
+        
 
         # for code, data of @meteo
         #     table.append($('<tr>'))
@@ -220,8 +285,8 @@ loadCitiesFromJson = (jsonData) ->
         # new city needs to be added
         else if not old_id? or new_id < old_id
             infos = city_data[new_id]
-            global.cities[new_id] = new City(infos.name, infos.coords,
-                                      infos.month_stats)
+            global.cities[new_id] = new City(infos.name, infos.country,
+                                             infos.coords, infos.month_stats)
             # ++nb_new
             global.cities[new_id].addToMap(global.month, global.map)
             ++ni
@@ -243,7 +308,11 @@ refreshCities = (e) ->
         s: bounds.getSouth()# + (bounds.getNorth() - bounds.getSouth())*.1
         e: bounds.getEast()# - (bounds.getEast() - bounds.getWest())*.1
         w: bounds.getWest()# + (bounds.getEast() - bounds.getWest())*.1
-
+    
+    map = $('#map')
+    nb = map.width() * map.height() / 100 / 100 * NB_CITIES_PER_100PX_SQ
+    nb = nb.toFixed()
+    coords['nb'] = nb
     $.get('data', coords, loadCitiesFromJson, 'json')
     
 

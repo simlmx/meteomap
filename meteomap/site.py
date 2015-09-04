@@ -23,6 +23,9 @@ def data_route():
     north = request.args.get('n')
     south = request.args.get('s')
     month = request.args.get('m')
+    nb = int(request.args.get('nb', config['max_nb_cities_at_once']))
+    if nb > config['max_nb_cities_at_once']:
+        nb = config['max_nb_cities_at_once']
 
     if west is None or east is None or south is None or north is None:
         return 'TODO 404'
@@ -36,7 +39,7 @@ def data_route():
                 cast(rectangle, Geometry()),
                 func.ST_SetSRID(cast(City.location, Geometry()), 0))) \
             .order_by(City.priority_index) \
-            .limit(config['nb_cities_at_once']).subquery('city')
+            .limit(nb).subquery('city')
 
         # get their data
         query = session.query(
@@ -45,10 +48,10 @@ def data_route():
             func.ST_Y(cast(sq.c.location, Geometry())),
             func.ST_X(cast(sq.c.location, Geometry())),
             sq.c.population, MonthlyStat.month,
-            MonthlyStat.value, Stat.code) \
+            MonthlyStat.value, Stat.code, sq.c.country) \
             .join(MonthlyStat) \
             .join(Stat) \
-            .filter(Stat.code.in_(['avgHigh', 'precipitation', 'monthlySunHours']))
+            .filter(Stat.code.in_(['avgHigh', 'avgLow', 'precipitation', 'precipitationDays', 'monthlySunHours']))
 
         if month is not None:
             query = query.filter(MonthlyStat.month == month)
@@ -64,6 +67,7 @@ def data_route():
             cities[id]['coords'] = (row[2], row[3])
             cities[id]['pop'] = row[4]
             cities[id]['month_stats'][row[7]][row[5]] = row[6]
+            cities[id]['country'] = row[8]
         # from pprint import pprint
         # pprint(cities)
     return json.dumps(cities)

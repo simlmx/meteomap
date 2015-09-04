@@ -39,45 +39,35 @@
         <!-- </div><!--/.nav-collapse -->
       <!-- </div> -->
     <!-- </nav> -->
-    <table id="container">
-      <tr id="row1">
-        <td id="left-col">
+        <div class="left left-width">
           <div id="map-wrap">
             <div id="map"></div>
           </div>
-        </td>
-        <td id="right-col">
-          <div id="meteo-tables-container">
-            <div id="meteo-tables-controls">
-              <button type="button" class="btn btn-danger btn-xs" id="meteo-tables-clear-all" style="display:none"> 
-                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                Clear all
-              </button>
-            </div>
-            <div id="meteo-tables-placeholder">
-              <p class="alert alert-info">
-                Click on cities on the map to view their stats for the whole year
-              </p>
-            </div>
-            <div id="meteo-tables">
-            </div>
-          </div>
-        </td>
-      </tr>
-      <tr id="row2">
-        <td>
-          <div id="prev-next-ctrls">
-            <button type="button" class="btn btn-primary", id="prev-btn">
+          <div id="bottom">
+            <button type="button" class="btn btn-primary" id="prev-btn">
               <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
             </button>
             <div id=month></div>
-            <button type="button" class="btn btn-primary", id="next-btn">
+            <button type="button" class="btn btn-primary" id="next-btn">
               <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
             </button>
           </div>
-        </td>
-      </tr>
-    </table>
+        </div>
+        <div class="right right-width">
+          <div id="meteo-tables-controls">
+            <button type="button" class="btn btn-danger btn-xs" id="meteo-tables-clear-all" style="display:none"> 
+              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+              Clear all
+            </button>
+          </div>
+          <div id="meteo-tables-placeholder">
+            <p class="alert alert-info">
+              Click on cities on the map to view their stats for the whole year
+            </p>
+          </div>
+          <div id="meteo-tables">
+          </div>
+        </div>
     <script src="static/js/jquery-1.11.3.min.js"></script>
     <script src="static/js/bootstrap.min.js"></script>
     <script src="static/js/map.js"></script>
