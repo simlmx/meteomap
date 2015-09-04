@@ -62,8 +62,8 @@ html, body {
 }
 
 .left-exp-width {
-  width: calc(100% - 443px);
-  min-width: calc(100% - 443px);
+  width: calc(100% - 467px);
+  min-width: calc(100% - 467px);
 }
 
 .left-width {
@@ -143,7 +143,7 @@ li {
   margin:0;
   padding:0;
   display:inline-block;
-  width:26px;
+  width:28px;
   text-align:center;
   border:1px solid black;
 }
@@ -157,8 +157,8 @@ li {
 }
 
 .right-exp-width {
-  width: 443px;
-  min-width: 443px;
+  width: 467px;
+  min-width: 467px;
 }
 .right-width {
   width: 200px;
@@ -205,9 +205,9 @@ li {
 
 .meteo-table td {
   border-top: 1px solid white;
-  width:26px;
-  min-width:26px;
-  max-width:26px;
+  width:28px;
+  min-width:28px;
+  max-width:28px;
   text-align:center;
   font-size:8pt;
   overflow:hidden;
@@ -236,6 +236,9 @@ li {
 
 .highlight-city {
   border:1px solid black;
+}
+#meteo-tables-clear-all {
+  margin-right:10px;
 }
 
 /* @media (max-width: 500px) { */
