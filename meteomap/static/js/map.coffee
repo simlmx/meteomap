@@ -240,8 +240,7 @@ class City
                           .appendTo(tr)      
             for month in [0...12]
                 value = data[month]
-                if value >= 100
-                    value = @formatValue(value)
+                value = @formatValue(value)
                 $('<td>').html(value).css('background-color',
                               rgb2hex(getColor(code,value)...))
                          .addClass('stat-table-data-col')
@@ -256,6 +255,8 @@ class City
     formatValue: (val) ->
         if val >= 100
             return val.toPrecision(3)
+        # parsing again to remove trailing 0s
+        val = parseFloat(val.toFixed(1))
         return val # to string?
         
 

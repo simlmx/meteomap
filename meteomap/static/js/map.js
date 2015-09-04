@@ -289,9 +289,7 @@
         $('<th>').html("" + stat_name + " (" + stat_infos['unit'] + ")").appendTo(tr);
         for (month = _j = 0; _j < 12; month = ++_j) {
           value = data[month];
-          if (value >= 100) {
-            value = this.formatValue(value);
-          }
+          value = this.formatValue(value);
           $('<td>').html(value).css('background-color', rgb2hex.apply(null, getColor(code, value))).addClass('stat-table-data-col').addClass("stat-table-data-col-" + month).appendTo(tr);
         }
       }
@@ -305,6 +303,7 @@
       if (val >= 100) {
         return val.toPrecision(3);
       }
+      val = parseFloat(val.toFixed(1));
       return val;
     };
 
