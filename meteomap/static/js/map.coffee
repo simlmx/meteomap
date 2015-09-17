@@ -6,13 +6,17 @@ CODES = ['avgHigh', 'avgLow', 'precipitation', 'precipitationDays', 'monthlySunH
 
 NB_CITIES_PER_100PX_SQ = 1
 
-MIN_RED = [255,230,230]
-MAX_RED = [204,0,0]
-MIN_BLUE = [230,230,255]
-MAX_BLUE = [0,0,204]
-MIN_GREEN = [230,255,230]
-MEDIUM_GREEN = [20,150,20]
-MAX_GREEN = [0,120,0]
+# chosen using this: davidjohnstone.net/pages/lch-lab-colour-gradient-picker
+MIN_RED = [250, 209, 209]
+MAX_RED = [143, 0, 0]
+
+MIN_BLUE = [204, 221, 255]
+MAX_BLUE = [0,50,158]
+
+# MIN_GREEN = [230,255,230]
+MIN_GREEN = [230, 250, 210]
+# MEDIUM_GREEN = [20,120,20]
+MAX_GREEN = [0, 102, 29]
 
 BLACK = [0,0,0]
 WHITE = [255,255,255]
@@ -41,7 +45,7 @@ $('#month').text(MONTHNAMES[global.month])
 
 updateMeteoTables = (month) ->
     $(".stat-table-data-col").css('border', 'none')
-    $(".stat-table-data-col-#{month}").css('border', '1px solid')
+    $(".stat-table-data-col-#{month}").css('border', '1px solid black')
 
 updateMeteoTablesWidth = ->
     n = $('.meteo-table').length
@@ -98,22 +102,25 @@ rgb2hex = (red, green, blue) ->
 # min = min value
 # max = max value
 # val = value we want a color for
-gradient = (rgb_min, rgb_max, min, max, val) ->
+# fn = base function, by default linear but you can use quadratic or log etc.
+gradient = (rgb_min, rgb_max, min, max, val, fn=null) ->
+    if not fn?
+        fn = (x) -> x
     if val <= min
         return rgb_min
     else if val >= max
         return rgb_max
-    delta = (rgb_max[i] - rgb_min[i] for i in [0,1,2])
-    # FIXME make a better interpolation
-    rgb = (rgb_min[i] + delta[i] * (val-min)/(max-min) for i in [0,1,2])
+    # FIXME make a better interpolation though it might not 
+    rgb = ((rgb_max[i] - rgb_min[i]) / fn(max - min) * fn(val - min) +
+            rgb_min[i] for i in [0,1,2])
     return rgb
 
-# perceivedBrightness = (rgb) ->
-#     [r,g,b] = rgb
-#     return Math.sqrt(
-#         r*r * .299 +
-#         g*g * .587 +
-#         b*b * .114)
+perceivedBrightness = (rgb) ->
+    [r,g,b] = rgb
+    return Math.sqrt(
+        r*r * .299 +
+        g*g * .587 +
+        b*b * .114)
 
 # textColorFromBg = (rgb) ->
 #     console.log perceivedBrightness(rgb)
@@ -128,34 +135,35 @@ getColor = (code, value) ->
         if value > 10
             rgb = gradient(MIN_RED, MAX_RED, 10, 40, value)
         else
-            rgb = gradient(MAX_BLUE, MIN_BLUE, -15, 10, value)
+            rgb = gradient(MAX_BLUE, MIN_BLUE, -20, 10, value)
     else if code == 'precipitation'
-        if value < 400
-            rgb = gradient(MIN_GREEN, MEDIUM_GREEN, 0, 400, value)
-        else
-            rgb = gradient(MEDIUM_GREEN, MAX_GREEN, 400, 800, value)
+        rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 800, value, (x) -> Math.sqrt(x))
     else if code == 'precipitationDays'
-        rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 30, value)
+        rgb = gradient(MIN_GREEN, MAX_GREEN, 0, 30, value, (x) -> Math.sqrt(x))
     else if code == 'monthlySunHours'
-        gray = [180,175,100]
-        yellow = [255, 250, 100]
-        rgb = gradient(gray, yellow, 125, 250, value)
+        gray = [149,149,133]
+        yellow = [255, 255, 26]
+        rgb = gradient(gray, yellow, 30, 250, value)
     else
         return WHITE
 
     return rgb
 
 
-colorToHtml = (value, color, code) ->
+colorToHtml = (value, color, code, fgcolor=BLACK) ->
     li = $('<li>').addClass('temperature')
     li.css('background-color', rgb2hex(color...))
-    li.css('color', rgb2hex(BLACK...))
+    li.css('color', rgb2hex(fgcolor...))
     li.html(value) #+ " " + global.stats[code].unit)
     return li#[0].outerHTML
 
+getForegroundColor = (bgcolor) ->
+    if perceivedBrightness(bgcolor) < 155
+        return WHITE
+    return BLACK
 
 class City
-    constructor: (@name, @country, @coords, @meteo) ->
+    constructor: (@name, @country, @source, @coords, @meteo) ->
         @inTable = false
 
     getData: (code, month) ->
@@ -164,17 +172,16 @@ class City
         return @meteo[code][month]
 
     iconHtml: (month) =>
-        div = $('<div>')
-        # div.append(@name)
-        ul = $('<ul>').appendTo(div)
+        ul = $('<ul>')
         for code in CODES
             value = @getData(code, month)
             if not value?
                 continue
             value = @formatValue(value)
             color = getColor(code, value)
-            ul.append(colorToHtml(value, color, code))
-        return div[0].outerHTML
+            fgcolor = getForegroundColor(color)
+            ul.append(colorToHtml(value, color, code, fgcolor))
+        return ul[0].outerHTML
 
     makeIcon: (month) ->
         L.divIcon({className: 'citydata', html: @iconHtml(month), \
@@ -202,13 +209,13 @@ class City
             return
         container = $('<div class="meteo-table-container">')
             .appendTo('#meteo-tables')
-            .hover((-> $(this).find('.btn').show()),
-                   (-> $(this).find('.btn').hide()))
+            .hover((-> $(this).find('.btn-table-remove').show()),
+                   (-> $(this).find('.btn-table-remove').hide()))
             # pas top shape encore ca
             # .hover((=> $("#name-#{@name}").addClass('highlight-city')),
             #        (=> $("#name-#{@name}").removeClass('highlight-city')))
 
-        btn = $('<button type="button" class="btn btn-danger btn-xs' +
+        btn = $('<button type="button" class="btn btn-danger btn-xs btn-xxs btn-table-remove' +
                 ' meteo-table-close" style="display:none">')
             .append('<span class="glyphicon glyphicon-remove"' +
                 ' aria-hidden="true"></span>')
@@ -218,7 +225,13 @@ class City
             .click(=> @inTable = false)
  
         header = $('<div class="meteo-table-header">')
-            .append("<strong>#{@name}, #{@country}</strong>")
+            .append(
+                    "<strong>#{@name}, #{@country}</strong>" +
+                    "<a href=\"#{@source}\" target=\"_blank\">" +
+                    "<button type=\"button\" class=\"btn btn-default btn-xs btn-xxs btn-wiki\">" +
+                    "<img src=\"static/images/wiki_w.svg\" style=\"width:16px; height:16px;\">" +
+                    "</button>" +
+                    "</a>")
             .append(btn)
             .appendTo(container)
 
@@ -241,8 +254,11 @@ class City
             for month in [0...12]
                 value = data[month]
                 value = @formatValue(value)
+                color = getColor(code, value)
+                fgcolor = getForegroundColor(color)
                 $('<td>').html(value).css('background-color',
-                              rgb2hex(getColor(code,value)...))
+                              rgb2hex(color...))
+                         .css('color', rgb2hex(fgcolor...))
                          .addClass('stat-table-data-col')
                          .addClass("stat-table-data-col-#{month}")
                          .appendTo(tr)
@@ -287,7 +303,7 @@ loadCitiesFromJson = (jsonData) ->
         else if not old_id? or new_id < old_id
             infos = city_data[new_id]
             global.cities[new_id] = new City(infos.name, infos.country,
-                                             infos.coords, infos.month_stats)
+                infos.source, infos.coords, infos.month_stats)
             # ++nb_new
             global.cities[new_id].addToMap(global.month, global.map)
             ++ni

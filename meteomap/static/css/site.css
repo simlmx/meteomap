@@ -221,7 +221,6 @@ li {
 }
 .meteo-table-close {
   float:right;
-  text-align:center;
 }
 
 #meteo-tables-placeholder {
@@ -241,6 +240,11 @@ li {
   margin-right:10px;
 }
 
+.source-link {
+  color:black;
+  font-weight:bold;
+}
+
 /* @media (max-width: 500px) { */
   /* #left-col { */
     /* min-width:600px; */
@@ -255,3 +259,12 @@ li {
 /*     min-width:100%; */
 /*   } */
 /* } */
+.btn-xxs {
+  width:20px;
+  height:20px;
+  margin:0;
+  padding:0;
+}
+.btn-wiki {
+  margin-left:10px;
+}

@@ -48,10 +48,11 @@ def data_route():
             func.ST_Y(cast(sq.c.location, Geometry())),
             func.ST_X(cast(sq.c.location, Geometry())),
             sq.c.population, MonthlyStat.month,
-            MonthlyStat.value, Stat.code, sq.c.country) \
+            MonthlyStat.value, Stat.code, sq.c.country, sq.c.source) \
             .join(MonthlyStat) \
             .join(Stat) \
-            .filter(Stat.code.in_(['avgHigh', 'avgLow', 'precipitation', 'precipitationDays', 'monthlySunHours']))
+            .filter(Stat.code.in_(['avgHigh', 'avgLow', 'precipitation',
+                                   'precipitationDays', 'monthlySunHours']))
 
         if month is not None:
             query = query.filter(MonthlyStat.month == month)
@@ -68,6 +69,7 @@ def data_route():
             cities[id]['pop'] = row[4]
             cities[id]['month_stats'][row[7]][row[5]] = row[6]
             cities[id]['country'] = row[8]
+            cities[id]['source'] = row[9]
         # from pprint import pprint
         # pprint(cities)
     return json.dumps(cities)
