@@ -26,6 +26,7 @@ global =
     cities: {}
     map:null
     searched_city: null
+    cities_in_table: {}
 
 # setup the search
 $('#search').select2({
@@ -91,8 +92,7 @@ updateMeteoTablesWidth = ->
     else
         $('#meteo-tables-placeholder').show()
         $('#meteo-tables-clear-all').hide()
-        for k,c of global.cities
-            c.inTable = false
+        global.cities_in_table = {}
         $('.right').removeClass('right-exp-width')
         $('.right').addClass('right-width')
         $('.left').removeClass('left-exp-width')
@@ -246,7 +246,7 @@ class City
         map.removeLayer @marker
 
     addToTable: =>
-        if @inTable
+        if @id of global.cities_in_table
             return
         container = $('<div class="meteo-table-container">')
             .appendTo('#meteo-tables')
@@ -263,7 +263,7 @@ class City
             .click(->
                 $(this).parent().parent().remove()
                 updateMeteoTablesWidth())
-            .click(=> @inTable = false)
+            .click(=> delete global.cities_in_table[@id])
  
         header = $('<div class="meteo-table-header">')
             .append(
@@ -307,7 +307,7 @@ class City
         $('#meteo-tables-clear-all').show()
         updateMeteoTables(global.month)
         updateMeteoTablesWidth()
-        @inTable = true
+        global.cities_in_table[@id] = true
 
     formatValue: (val) ->
         if val >= 100

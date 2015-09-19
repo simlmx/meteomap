@@ -29,7 +29,8 @@
     stats_info: null,
     cities: {},
     map: null,
-    searched_city: null
+    searched_city: null,
+    cities_in_table: {}
   };
 
   $('#search').select2({
@@ -90,7 +91,7 @@
   };
 
   updateMeteoTablesWidth = function() {
-    var c, k, n, _ref;
+    var n;
     n = $('.meteo-table').length;
     if (n > 0) {
       $('#meteo-tables-placeholder').hide();
@@ -101,11 +102,7 @@
     } else {
       $('#meteo-tables-placeholder').show();
       $('#meteo-tables-clear-all').hide();
-      _ref = global.cities;
-      for (k in _ref) {
-        c = _ref[k];
-        c.inTable = false;
-      }
+      global.cities_in_table = {};
       $('.right').removeClass('right-exp-width');
       $('.right').addClass('right-width');
       $('.left').removeClass('left-exp-width');
@@ -319,7 +316,7 @@
     City.prototype.addToTable = function() {
       var btn, code, color, container, data, fgcolor, header, month, stat_infos, stat_name, table, tr, value, _i, _j, _len,
         _this = this;
-      if (this.inTable) {
+      if (this.id in global.cities_in_table) {
         return;
       }
       container = $('<div class="meteo-table-container">').appendTo('#meteo-tables').hover((function() {
@@ -331,7 +328,7 @@
         $(this).parent().parent().remove();
         return updateMeteoTablesWidth();
       }).click(function() {
-        return _this.inTable = false;
+        return delete global.cities_in_table[_this.id];
       });
       header = $('<div class="meteo-table-header">').append(("<strong>" + this.name + ", " + this.country + "</strong>") + ("<a href=\"" + this.source + "\" target=\"_blank\">") + "<button type=\"button\" class=\"btn btn-default btn-xs btn-xxs btn-wiki\">" + "<img src=\"static/images/wiki_w.svg\" style=\"width:16px; height:16px;\">" + "</button>" + "</a>").append(btn).appendTo(container);
       table = $('<table class="meteo-table">').appendTo(container);
@@ -359,7 +356,7 @@
       $('#meteo-tables-clear-all').show();
       updateMeteoTables(global.month);
       updateMeteoTablesWidth();
-      return this.inTable = true;
+      return global.cities_in_table[this.id] = true;
     };
 
     City.prototype.formatValue = function(val) {
