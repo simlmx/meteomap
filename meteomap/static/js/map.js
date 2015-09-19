@@ -28,8 +28,45 @@
   global = {
     stats_info: null,
     cities: {},
-    map: null
+    map: null,
+    searched_city: null
   };
+
+  $('#search').select2({
+    theme: 'bootstrap',
+    placeholder: 'Search for a city',
+    ajax: {
+      url: '/search',
+      dataType: 'json',
+      delay: 250,
+      data: function(params) {
+        var page;
+        page = params.page != null ? params.page - 1 : 0;
+        return {
+          q: params.term,
+          page: page
+        };
+      },
+      processResults: function(data, page) {
+        return {
+          results: data.results,
+          pagination: {
+            more: data.more
+          }
+        };
+      },
+      cache: true
+    },
+    minimumInputLength: 1
+  }).on('select2:selecting', function(e) {
+    var coords, id;
+    coords = e.params.args.data.coords;
+    id = e.params.args.data.id;
+    global.searched_city = id;
+    return global.map.setView(coords, 8);
+  }).on('select2:close', function(e) {
+    return $('#search').val(null).trigger('change');
+  });
 
   loadStatsFromJson = function(jsonData) {
     return global.stats = jsonData;
@@ -186,7 +223,7 @@
     if (fgcolor == null) {
       fgcolor = BLACK;
     }
-    li = $('<li>').addClass('temperature');
+    li = $('<li>');
     li.css('background-color', rgb2hex.apply(null, color));
     li.css('color', rgb2hex.apply(null, fgcolor));
     li.html(value);
@@ -202,12 +239,13 @@
 
   City = (function() {
 
-    function City(name, country, source, coords, meteo) {
+    function City(name, country, source, coords, meteo, id) {
       this.name = name;
       this.country = country;
       this.source = source;
       this.coords = coords;
       this.meteo = meteo;
+      this.id = id;
       this.addToTable = __bind(this.addToTable, this);
 
       this.iconHtml = __bind(this.iconHtml, this);
@@ -223,8 +261,12 @@
     };
 
     City.prototype.iconHtml = function(month) {
-      var code, color, fgcolor, ul, value, _i, _len;
-      ul = $('<ul>');
+      var code, color, div, fgcolor, ul, value, _i, _len;
+      div = $('<div class="temperature">');
+      ul = $('<ul>').appendTo(div);
+      if (global.searched_city === this.id) {
+        ul.addClass('searched-city');
+      }
       for (_i = 0, _len = CODES.length; _i < _len; _i++) {
         code = CODES[_i];
         value = this.getData(code, month);
@@ -236,7 +278,7 @@
         fgcolor = getForegroundColor(color);
         ul.append(colorToHtml(value, color, code, fgcolor));
       }
-      return ul[0].outerHTML;
+      return div[0].outerHTML;
     };
 
     City.prototype.makeIcon = function(month) {
@@ -249,8 +291,13 @@
 
     City.prototype.updateMonth = function(month) {
       var icon;
+      this.lastMonth = month;
       icon = this.makeIcon(month);
       return this.marker.setIcon(icon);
+    };
+
+    City.prototype.update = function() {
+      return this.updateMonth(this.lastMonth);
     };
 
     City.prototype.addToMap = function(month, map) {
@@ -261,7 +308,8 @@
         icon: icon
       });
       this.marker.addTo(map);
-      return this.marker.on('click', this.addToTable);
+      this.marker.on('click', this.addToTable);
+      return this.lastMonth = month;
     };
 
     City.prototype.removeFromMap = function(map) {
@@ -331,6 +379,7 @@
     city_data = jsonData;
     new_ids = Object.keys(city_data).sort();
     old_ids = Object.keys(global.cities).sort();
+    $('.searched-city').removeClass('searched-city');
     ni = oi = 0;
     _results = [];
     while (true) {
@@ -344,10 +393,11 @@
         _results.push(++oi);
       } else if (!(old_id != null) || new_id < old_id) {
         infos = city_data[new_id];
-        global.cities[new_id] = new City(infos.name, infos.country, infos.source, infos.coords, infos.month_stats);
+        global.cities[new_id] = new City(infos.name, infos.country, infos.source, infos.coords, infos.month_stats, parseInt(new_id));
         global.cities[new_id].addToMap(global.month, global.map);
         _results.push(++ni);
       } else {
+        global.cities[new_id].update();
         ++oi;
         _results.push(++ni);
       }

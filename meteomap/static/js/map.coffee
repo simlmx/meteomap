@@ -25,6 +25,39 @@ global =
     stats_info: null
     cities: {}
     map:null
+    searched_city: null
+
+# setup the search
+$('#search').select2({
+    theme:'bootstrap'
+    placeholder: 'Search for a city'
+    # allowClear: true
+    ajax:
+        url: '/search'
+        dataType: 'json'
+        delay: 250
+        data: (params) ->
+            # -1 because select2 is 1-based
+            page = if params.page? then params.page - 1 else 0 
+            return {
+                q: params.term
+                page: page }
+        processResults: (data, page) ->
+            return {
+                results: data.results
+                pagination:
+                    more:data.more}
+        cache: true
+    minimumInputLength:1
+}).on('select2:selecting', (e) ->
+    coords = e.params.args.data.coords
+    id = e.params.args.data.id
+    global.searched_city = id
+    global.map.setView(coords, 8)
+).on('select2:close', (e) ->
+    # reset selection on close
+    $('#search').val(null).trigger('change')
+)
 
 # get the Stat infos
 loadStatsFromJson = (jsonData) ->
@@ -151,7 +184,7 @@ getColor = (code, value) ->
 
 
 colorToHtml = (value, color, code, fgcolor=BLACK) ->
-    li = $('<li>').addClass('temperature')
+    li = $('<li>')
     li.css('background-color', rgb2hex(color...))
     li.css('color', rgb2hex(fgcolor...))
     li.html(value) #+ " " + global.stats[code].unit)
@@ -163,7 +196,7 @@ getForegroundColor = (bgcolor) ->
     return BLACK
 
 class City
-    constructor: (@name, @country, @source, @coords, @meteo) ->
+    constructor: (@name, @country, @source, @coords, @meteo, @id) ->
         @inTable = false
 
     getData: (code, month) ->
@@ -172,7 +205,10 @@ class City
         return @meteo[code][month]
 
     iconHtml: (month) =>
-        ul = $('<ul>')
+        div = $('<div class="temperature">')
+        ul = $('<ul>').appendTo(div)
+        if global.searched_city == @id
+            ul.addClass('searched-city')
         for code in CODES
             value = @getData(code, month)
             if not value?
@@ -181,15 +217,19 @@ class City
             color = getColor(code, value)
             fgcolor = getForegroundColor(color)
             ul.append(colorToHtml(value, color, code, fgcolor))
-        return ul[0].outerHTML
+        return div[0].outerHTML
 
     makeIcon: (month) ->
         L.divIcon({className: 'citydata', html: @iconHtml(month), \
                    iconSize: null})
 
     updateMonth: (month) ->
+        @lastMonth = month
         icon = @makeIcon(month)
         @marker.setIcon(icon)
+
+    update: ->
+        @updateMonth(@lastMonth)
 
     addToMap: (month, map) ->
         icon = @makeIcon(month)
@@ -198,6 +238,7 @@ class City
         @marker = L.marker(@coords, {title:@name, icon:icon})
         @marker.addTo map
         @marker.on('click', @addToTable)
+        @lastMonth = month
         # @marker2 = L.marker(@coords, {title:'debug' + @name})
         # @marker2.addTo map
 
@@ -286,6 +327,9 @@ loadCitiesFromJson = (jsonData) ->
     new_ids = Object.keys(city_data).sort()
     old_ids = Object.keys(global.cities).sort()
 
+    # remove searched city highlighting
+    $('.searched-city').removeClass('searched-city')
+    
     # nb_del=nb_new=nb_stay=0
     ni=oi=0
     while true
@@ -303,11 +347,12 @@ loadCitiesFromJson = (jsonData) ->
         else if not old_id? or new_id < old_id
             infos = city_data[new_id]
             global.cities[new_id] = new City(infos.name, infos.country,
-                infos.source, infos.coords, infos.month_stats)
+                infos.source, infos.coords, infos.month_stats, parseInt(new_id))
             # ++nb_new
             global.cities[new_id].addToMap(global.month, global.map)
             ++ni
         else
+            global.cities[new_id].update()
             ++oi
             ++ni
             # ++nb_stay

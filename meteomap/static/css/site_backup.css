@@ -1,0 +1,227 @@
+/* DEBUG */
+html * {
+  border:1px solid;
+}
+.row {
+  background:yellow;
+}
+
+#prev-next-ctrls {
+  background:orange;
+}
+
+html, body {
+  background-color:brown;
+}
+
+nav {
+  background-color:purple;
+}
+
+#map {
+  background-color:green;
+}
+#left-col {
+  background:yellow;
+}
+#right-col {
+  background:blue;
+}
+#meteo-table-container {
+  background:purple;
+}
+/* END OF DEBUG */
+
+
+html, body {
+  height:100%;
+  padding:0;
+  margin:0;
+}
+
+/* smaller nav bar
+ * http://stackoverflow.com/a/18602076/1067132 */
+.navbar-nav > li > a, .navbar-brand {
+    padding-top:4px;
+    padding-bottom:0;
+    height: 28px;
+}
+.navbar {
+  min-height:10px;
+}
+
+footer {
+  height:5%;
+}
+
+/*
+ * MAP PANE
+ * */
+#left-col {
+  display:inline-block;
+}
+#map {
+  min-height:100px;
+  border:1px solid;
+  margin:auto;
+}
+
+/* TODO the buttons are not really vertically centered */
+#prev-next-ctrls {
+  margin:auto;
+  text-align:center;
+  /* white-space:nowrap; */
+}
+
+
+@media (max-width: 600px) {
+  #map {
+  }
+}
+@media (min-width: 600px) {
+  #map {
+  }
+  #right-col {
+    /* float:right; */
+  }
+  #left-col {
+    /* display:inline-block; */
+  }
+}
+
+#month {
+  font-size: 18pt;
+  text-align: center;
+  display: inline-block;
+  width:30%;
+  min-width:6em;
+  max-width:500px;
+}
+
+#month-control {
+  display: inline-block;
+}
+
+#prev_btn, #next_btn {
+  width:50px;
+  height:50px;
+}
+
+/*
+ * MAP ELEMENTS
+ */
+
+.temperature {
+  font-size: 10pt;
+  /* color: black; */
+  display: inline-block;
+}
+
+.citydata {
+  margin-left:-100px;
+  margin-top:0px;
+  width:200px;
+  font-size:16pt;
+
+  display:inline-block;
+  
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/*
+ * TABLES PANE
+ * */
+#right-col {
+  display:inline-block;
+  /* float:left; */
+}
+
+
+.meteo-table {
+  /* margin:10px; */
+  width:auto;
+  padding:0;
+  margin:0;
+}
+
+.meteo-table * {
+  font-size:7.5pt;
+  word-break: keep-all;
+  /* table-layout:fixed; */
+  padding:0;
+  margin:0;
+}
+
+.meteo-table tr {
+  /* width:100px; */
+  width:auto;
+}
+.meteo-table th {
+  min-width:100px;
+  width:100px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.meteo-table td.stat-table-data-col {
+/*   vertical-align: middle; */
+  /* width: 28px; */
+  min-width: 28px;
+  width: 28px;
+  vertical-align: middle;
+  text-align: center;
+  /* font-weight: bold; */
+  padding:0;
+  margin:0;
+/*   word-break:break-all; */
+  /* vertical-align: middle; */
+}
+
+#meteo-tables {
+  max-height:100%;
+  overflow-y: scroll; 
+  overflow-x: hidden;
+}
+
+/* #meteo-tables-col { */
+/*   overflow-y: scroll;  */
+/*   height:100%; */
+/* } */
+
+#meteo-tables-controls {
+  height:40px;
+  text-align:right;
+}
+
+.meteo-tables-div {
+  margin:0;
+  padding:0;
+}
+
+.meteo-table-header {
+  text-align:left;
+  width:auto;
+  height:28px;
+  margin:0;
+  margin-right:10px;
+  padding:0;
+}
+
+#meteo-tables-clear-all {
+  margin-bottom:10px;
+}
+
+#meteo-tables-placeholder p {
+  width:50%;
+  margin:auto;
+  text-align:center;
+  /* margin-top:50%; */
+  padding:2px;
+}
+
+.meteo-table-close {
+  display:none;
+  float:right;
+}

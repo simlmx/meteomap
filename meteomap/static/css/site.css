@@ -1,6 +1,6 @@
 /* DEBUG */
 /* * { */
-/*   border:1px solid; */
+  /* border:1px solid; */
 /* } */
 /* .row { */
 /*   background:yellow; */
@@ -128,17 +128,14 @@ html, body {
 }
 
 
-ul {
+.temperature > ul {
   list-style-type:none;
-  background:black;
   height:auto;
   padding:0;
   margin:0;
 }
 
-.temperature {
-}
-li {
+.temperature > ul > li {
   font-size: 8pt;
   margin:0;
   padding:0;
@@ -267,4 +264,16 @@ li {
 }
 .btn-wiki {
   margin-left:10px;
+}
+
+#search-div {
+  width:calc(100% - 10px);
+}
+
+#search {
+  width:100%;
+}
+
+.searched-city {
+  border:2px solid orange;
 }

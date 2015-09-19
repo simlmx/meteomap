@@ -2,6 +2,7 @@ import json, argparse
 from collections import defaultdict
 from flask import Flask, request, render_template
 from sqlalchemy import func, cast
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from geoalchemy2 import Geometry
 from meteomap.tables import City, MonthlyStat, Stat
 from meteomap.utils import session_scope, configure_logging
@@ -9,6 +10,10 @@ from meteomap.settings import config
 
 
 app = Flask(__name__)
+
+
+class unaccent(ReturnTypeFromArgs):
+    pass
 
 
 @app.route('/')
@@ -83,6 +88,36 @@ def stats_route():
                                       if c.name not in ['id', 'code']}
                  for x in session.query(Stat)}
     return json.dumps(infos)
+
+
+@app.route('/search')
+def search_route():
+    query = request.args.get('q')
+    per_page = request.args.get('per_page', 10, type=int)
+    page = request.args.get('page', 0, type=int)
+    if query is None:
+        return json.dumps({'results':[]})
+    result = {}
+    with session_scope() as session:
+        results = session.query(
+            City.name,
+            City.country,
+            func.ST_Y(cast(City.location, Geometry())),
+            func.ST_X(cast(City.location, Geometry())),
+            City.id
+            ) \
+            .filter(unaccent(City.name).ilike(unaccent('%' + query + '%'))) \
+            .limit(per_page + 1) \
+            .offset(page * per_page) \
+            .all()
+
+        more = len(results) == per_page + 1
+        results = results[:per_page]
+        result = json.dumps({
+            'results':
+            [{'id': c[4], 'text': '{}, {}'.format(c[0], c[1]), 'coords': (c[2], c[3])} for i,c in enumerate(results)],
+            'more': more})
+    return result
 
 
 if __name__ == '__main__':
