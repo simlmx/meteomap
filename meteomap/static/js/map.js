@@ -98,7 +98,7 @@
       $('.right').addClass('right-exp-width');
       $('.right').removeClass('right-width');
       $('.left').addClass('left-exp-width');
-      return $('.left').removeClass('left-width');
+      $('.left').removeClass('left-width');
     } else {
       $('#meteo-tables-placeholder').show();
       $('#meteo-tables-clear-all').hide();
@@ -106,8 +106,9 @@
       $('.right').removeClass('right-exp-width');
       $('.right').addClass('right-width');
       $('.left').removeClass('left-exp-width');
-      return $('.left').addClass('left-width');
+      $('.left').addClass('left-width');
     }
+    return global.map.invalidateSize();
   };
 
   updateCitiesMonth = function(month) {

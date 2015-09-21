@@ -97,6 +97,7 @@ updateMeteoTablesWidth = ->
         $('.right').addClass('right-width')
         $('.left').removeClass('left-exp-width')
         $('.left').addClass('left-width')
+    global.map.invalidateSize()
 
     
 
