@@ -1,8 +1,10 @@
 import re, sys, pickle, argparse, logging, time
 from pprint import pprint
+from itertools import count
 import wikipedia as wiki
 from bs4 import BeautifulSoup
 from meteomap.utils import open, ask_before_overwrite, Timer, configure_logging
+from Levenshtein import ratio
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +84,7 @@ def parse_climate_table(html):
     # if there is nothing, it means there were no climate table in that html
     # code
     if len(months) < 1:
-        return None
+        return {}
 
     if len(months) > 1:
         logger.debug('more than one matching table in html, using the first one')
@@ -141,24 +143,33 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', help='don\'t ask'
                         ' before overwriting the output file')
     parser.add_argument('--country', help='Will only look for cities in this'
-                        ' country. You can even filter more using --region')
+                        ' country.')
     parser.add_argument('--region', help='Will only look for cities in this'
-                        ' region. You need to also pass --country')
+                        ' region.')
+    parser.add_argument('--city', help='Will only look for that city.')
     parser.add_argument('--append', action='store_true', help='Will add'
                         ' unexisting cities to the already existing output'
                         ' file. Ignored if it doesn\'t exist.')
+    parser.add_argument('--update-only', action='store_true',
+                       help = 'We assume we already have cities in the output'
+                        ' and we will only (re-)augment those, skipping all the'
+                        ' others')
+    parser.add_argument('--logging-level', choices =
+                        ['debug', 'info', 'warning', 'error', 'critical'],
+                        default='info')
     args = parser.parse_args()
 
-    configure_logging()
+    configure_logging(args.logging_level.upper())
 
-    if args.region is not None and args.country is None:
-        logging.warning('can not use --region without --country')
-        sys.exit()
+    # validation of the passed arguments
+    if args.append and args.update_only:
+        raise Exception('can not use --append and --update-only at the'
+                        ' same time')
 
     with open(args.input_file) as f:
         dump_in = pickle.load(f)
 
-    if not (args.force or ask_before_overwrite(args.output_file)):
+    if not (args.append or args.force or ask_before_overwrite(args.output_file)):
         sys.exit()
 
     if args.skip_wiki:
@@ -170,7 +181,7 @@ if __name__ == '__main__':
             pickle.dump(dump_in, dump_out)
         sys.exit()
 
-    if args.append:
+    if args.append or args.update_only:
         logger.info('updating in %s', args.output_file)
         with open(args.output_file) as f:
             new_data = {'{}/{}/{}'.format(x.name, x.region, x.country): x
@@ -190,7 +201,8 @@ if __name__ == '__main__':
 
     def keep_city(city):
         if (args.country is None or city.country == args.country) and \
-                (args.region is None or city.region == args.region):
+                (args.region is None or city.region == args.region) and \
+                (args.city is None or city.name == args.city):
             return True
         return False
 
@@ -209,29 +221,50 @@ if __name__ == '__main__':
             break
         if not keep_city(city):
             continue
-        timer.update(nb_done)
-        logger.info(city)
+        timer.update()
+        logger.debug(city)
 
         city_id = '{}/{}/{}'.format(city.name, city.region, city.country)
+        # if the city is already there
         if city_id in new_data:
             nb_already_there += 1
+            if args.append:
+                continue
+        elif args.update_only:
             continue
 
         got_wiki = False
         got_climate = False
-        for potential_page in [city.name + ', ' + city.region,
-                               city.name + ', ' + city.country]:
-            for essaie in range(6):
+        for potential_page in [city.name + ', ' + city.country,
+                               city.name + ', ' + city.region]:
+            for essaie in count():
                 # should we also be looking for `city.name` by itself?
                 try:
                     page = wiki.page(potential_page)
+                    # check that the title of the page makes sense, i.e. that
+                    # we have the right page
+                    title_lower = page.title.lower()
+                    city_name_lower = city.name.lower()
+                    title_ok = False
+                    for comp in [city_name_lower, potential_page.lower(),
+                                city_name_lower + ' municipality',
+                                city_name_lower + ' city']:
+                        rt = ratio(title_lower, comp)
+                        logger.debug('ratio("%s", "%s") = %f',
+                                     title_lower, comp, rt)
+                        if rt > .8:
+                            title_ok = True
+                            break
+                    if not title_ok:
+                        break
                     got_wiki = True
                     html = page.html()
                     climate_data = parse_climate_table(html)
-                    if climate_data is None:
-                        # logger.debug('no climate table for %s', city)
-                        break
                     climate_data = parse_data(climate_data)
+                    # this can happen if there is a table that looks like our
+                    # table but isn't : we end up parsing 0 rows
+                    if len(climate_data) == 0:
+                        break
                     got_climate = True
                     break
                 except wiki.PageError:
@@ -248,20 +281,31 @@ if __name__ == '__main__':
 
         nb_done += 1
 
-        if not got_climate:
-            logger.info('didn\'t find a climate table for city %s', city.name)
-            nb_no_climate += 1
-            continue
-        elif not got_wiki:
+        # if we were updating, we had a city that wasn't supposed to be there
+        if not got_climate and args.update_only:
+            del new_data[city_id]
+
+        if not got_wiki:
             logger.info('didn\'t find a page for city %s', city.name)
             nb_no_wiki += 1
             continue
+        elif not got_climate:
+            logger.info('didn\'t find a climate table for city %s', city.name)
+            nb_no_climate += 1
+            continue
 
-        # because the wikipedia library crashes there sometimes
-        try:
-            coords = page.coordinates
-        except KeyError:
-            coords = None
+        for essaie in count():
+            try:
+                coords = page.coordinates
+                break
+            except KeyError:
+                coords = None
+                break
+            except Exception:
+                logger.exception('unhandled exception while looking for wiki'
+                                 ' coords')
+                logger.info('sleeping %i seconds', essaie+1)
+                time.sleep(essaie+1)
 
         if coords is not None:
             coords = [float(x) for x in coords]

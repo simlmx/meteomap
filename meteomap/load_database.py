@@ -1,4 +1,4 @@
-import pickle, argparse, sys, logging, math
+import pickle, argparse, sys, logging, heapq
 import numpy
 from geoalchemy2.elements import WKTElement
 from geoalchemy2 import Geometry
@@ -17,7 +17,6 @@ def fill_cities(data, session):
     for city in data:
         geom = WKTElement('POINT({:.8f} {:.8f})'.format(
             city.coords[1], city.coords[0], srid=4326))
-
         city_db = City(
             location = geom,
             name = city.name,
@@ -52,13 +51,11 @@ def add_priority_index(session, fast_mode=False):
     cities = session.query(City,
                           func.ST_Y(cast(City.location, Geometry())),
                           func.ST_X(cast(City.location, Geometry()))) \
-        .order_by(City.country_rank, City.region_rank, desc(City.population)) \
+        .join(MonthlyStat) \
+        .order_by(City.region_rank, City.country_rank,
+                  desc(func.count(MonthlyStat.id))) \
+        .group_by(City.id) \
         .yield_per(1000).all()
-    # FIXME aussi filter comme dans cette query:
-    # select c.name || '/' || c.region || '/' || c.country as city,
-    # count(s.name) from city as c join monthly_stat as m on m.city_id = c.id
-    # join stat as s on m.stat_id = s.id group by city order by count desc;
-    # i.e. plus la ville a de data, plus on veut la voir!
 
     if fast_mode:
         logger.info('doing the fast version of priority index')
@@ -66,7 +63,6 @@ def add_priority_index(session, fast_mode=False):
             city[0].priority_index = i
         session.commit()
         return
-
 
     def distance_fn(tuple1, tuple2):
         _,lat1,lon1 = tuple1
@@ -84,14 +80,39 @@ def add_priority_index(session, fast_mode=False):
                                       lons.reshape(-1,1),
                                       lats.reshape(1,-1),
                                       lons.reshape(1,-1))
+
+    class CityComp(object):
+        idx = None
+        max_dist = None
+        max_dist_idx = None
+
+        def __init__(self, max_dist, max_dist_idx):
+            self.max_dist = max_dist
+            self.max_dist_idx = max_dist_idx
+
+        def __lt__(self, other):
+            return self.max_dist < other.max_dist
+
     # each city is compared to all the previous ones (maximum)
     timer = Timer(len(indices_left))
+    # percent of closest cities to choose from
+    perc_closest_cities = 0.1
+    # same but max
+    max_closest_cities = 200
     while len(indices_left) > 0:
         # let's find the next city amongst the next candidates
-        max_dist = 0.
-        max_dist_idx = 0
-        logger.debug('\nlooking for the next one')
+        # this will be our (heap) list of good candidates, i.e. the ones
+        # farthest from all the others
+        good_candidates = []
+        nb_keep = min(perc_closest_cities * len(indices_left),
+                      max_closest_cities)
+        nb_keep = max(1, nb_keep)  # at least 1!
+        logger.debug('will keep the farthest %i', nb_keep)
+        # max_dist = 0.
+        # max_dist_idx = 0
+        logger.debug('---------looking for the next one----------')
         for no_candidate, i_left in enumerate(indices_left):
+            # logger.debug('candidate %i, idx %i', no_candidate, i_left)
             # find how close is the nearest neighbor for this city
             # we are looking for the city with the fartest nearest neighbor
             dist_nearest_neighbor = 1e9
@@ -100,8 +121,12 @@ def add_priority_index(session, fast_mode=False):
             too_close = False
             for i_chosen in indices:
                 cur_dist = distances[i_chosen, i_left]
-                if cur_dist <= max_dist:
+                # if we already have enough candidates, and if the current is
+                # worse than all others, let's skip it
+                if len(good_candidates) >= nb_keep \
+                        and cur_dist <= good_candidates[0].max_dist:
                     too_close = True
+                    # logger.debug('too close @%f', cur_dist)
                     break
                 dist_nearest_neighbor = min(dist_nearest_neighbor, cur_dist)
             # we don't compare the distance of this candidate with all cities
@@ -110,15 +135,36 @@ def add_priority_index(session, fast_mode=False):
             if too_close:
                 continue
             # dist_nearest_neighbor = numpy.min(distances[indices][:,i_left])
-            logger.debug('candidate %i has a city at %f', no_candidate,
-                         dist_nearest_neighbor)
+            # logger.debug('candidate %i has a city at %f', no_candidate,
+                         # dist_nearest_neighbor)
 
-            if dist_nearest_neighbor > max_dist:
-                logger.debug('(new max)')
-                max_dist = dist_nearest_neighbor
-                max_dist_idx = no_candidate
+            # if dist_nearest_neighbor > best_candidate.max_dist:
+                # logger.debug('(new max)')
+            new_candidate = CityComp(dist_nearest_neighbor, no_candidate)
+            # logger.debug('trying to add new candidate with dist %f',
+                         # new_candidate.max_dist)
+            # if we don't have enough anyway
+            if len(good_candidates) < nb_keep:
+                heapq.heappush(good_candidates, new_candidate)
+            else:
+                # if we have enough, just keep the n best
+                rejected_cand = heapq.heappushpop(good_candidates,
+                                                  new_candidate)
+                # logger.debug('removed candidate %i with dist %f',
+                            # rejected_cand.max_dist_idx,
+                            # rejected_cand.max_dist)
 
-        indices.append(indices_left.pop(max_dist_idx))
+        # take the smallest index in our good candidates. this corresponds to
+        # the best (according to our first ORDER BY) amongst the "far enough"
+        # candidates
+        best_candidate = min(good_candidates, key=lambda x: x.max_dist_idx)
+        logger.debug('keeping %s with pop %i',
+                     cities[indices_left[best_candidate.max_dist_idx]][0].name,
+                     cities[indices_left[best_candidate.max_dist_idx]][0].population,)
+        # input('press to continue')
+        indices.append(indices_left.pop(best_candidate.max_dist_idx))
+        logger.debug('done, best candidate was %i with distance %f',
+                     best_candidate.max_dist_idx, best_candidate.max_dist)
         logger.debug('done, chosen: %i, remaining: %i', len(indices),
                      len(indices_left))
         timer.update()
@@ -140,6 +186,8 @@ if __name__ == '__main__':
     parser.add_argument('--fast-priority-index', help='faster but the cities '
                         ' look less nice (less spread out) on the map',
                         action='store_true')
+    parser.add_argument('--country', help='Will only keep cities in this'
+                        ' country and ignore the rest')
     parser.add_argument('--max-cities', '-m', type=int)
     args = parser.parse_args()
 
@@ -187,6 +235,6 @@ if __name__ == '__main__':
 
     with session_scope() as session:
         logger.info('filling the database')
-        # fill_cities(data, session)
+        fill_cities(data, session)
         logger.info('adding the priority index')
         add_priority_index(session, args.fast_priority_index)

@@ -46,3 +46,4 @@ class Stat(Base):
     # unit symbol, e.g. mm or cm
     unit = sa.Column(sa.String(10), nullable=False)
     description = sa.Column(sa.String(250))
+    name_short = sa.Column(sa.String(2), nullable=False)

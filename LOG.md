@@ -209,3 +209,41 @@ autres. ça semble marcher pas pire!
 Pour l'instant si on recherce "phnom penh, phnom penh" (ville, region) et qu'on
 trouve qqch, même si c'est du caca et que (ville, pays) retourne la bonne chose,
 on skip. corriger ça.
+
+17 aout
+========
+C'est rendu quand même beau avec bootstrap. Reste à arranger les trucs multi-device...
+Faudrait mettre les flèches directement sous la map et que le panneau à droite soit
+optionnel (seulement sur les grosses devices).
+trouver un moyen (j'ai commecné à mettre un "order" pour les stats) d'avoir les
+stats tjrs dans le même ordre. Probablement retourner une liste de la database,
+déjà en ordre, règlerait le problème
+Aussi le clear-all ne devrait pas être dans le panneau qui scroll, il devrait
+tjrs rester en place
+Londre est pas là!
+
+24 aout
+=======
+j'ai arrangé le view en utilisant des tables :S au poubelles bootstrap... sauf
+pour qq détails
+à faire : 
+- arranger le look des stats sur la map
+- faire quand quand on hover sur une table, ça highlight sa ville... penser à ça
+
+11 sept
+=======
+y a qq villes, du genre
+page.wiki('santa ana, cusco')
+qui retournent pas la bonne ville
+on pourrait régler ça en cherchant ville, pays avant ville, province, mais ca
+ca va faire plein de problèmes pour e.g. springfield aux states
+Donc il faudrait plutôt qqch comme vérifier que le titre de la ville marche
+la recherche une fois cherchée. Pour mon exemple, on verrait que Cusco != Santa
+Ana.
+Aussi faut vraiment rajouter un mode Recherche par nom de ville. 
+
+16 sept
+=======
+j'ai pe réglé le problème pour Santa Ana et autres, en vérifiant que le "title"
+de la page wikipedia match (en terme de distance de string) le nom de la ville
+

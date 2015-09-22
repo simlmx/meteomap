@@ -57,7 +57,8 @@ def data_route():
             .join(MonthlyStat) \
             .join(Stat) \
             .filter(Stat.code.in_(['avgHigh', 'avgLow', 'precipitation',
-                                   'precipitationDays', 'monthlySunHours']))
+                                   'precipitationDays', 'monthlySunHours',
+                                   'rain', 'rainDays']))
 
         if month is not None:
             query = query.filter(MonthlyStat.month == month)
@@ -75,6 +76,15 @@ def data_route():
             cities[id]['month_stats'][row[7]][row[5]] = row[6]
             cities[id]['country'] = row[8]
             cities[id]['source'] = row[9]
+
+        # changing rain to precipitation
+        # TODO something similar with snow?
+        for _,c in cities.items():
+            for old, new in [('rain', 'precipitation'),
+                             ('rainDays', 'precipitationDays')]:
+                if old in c['month_stats'] and new not in c['month_stats']:
+                    c['month_stats'][new] = c['month_stats'].pop(old)
+
         # from pprint import pprint
         # pprint(cities)
     return json.dumps(cities)
