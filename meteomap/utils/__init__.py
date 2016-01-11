@@ -57,6 +57,8 @@ def open(filename, *args, **kwargs):
         z = zipfile.ZipFile(filename)
         names = z.namelist()
         if len(names) != 1:
+            print(filename)
+            print(names)
             raise ValueError('.zip files containing more than one file are not'
                              ' supported')
         return io.TextIOWrapper(z.open(names[0], 'rU'))

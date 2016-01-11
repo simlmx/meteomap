@@ -5,6 +5,7 @@
 /config.json
 /tmp
 /mm-ve
+LOG.md
 
 .ropeproject
 /meteomap.egg-info

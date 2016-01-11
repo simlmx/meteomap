@@ -5,7 +5,7 @@
         "password": "your db password",
         "host": "db host",
         "port": "db port"
-    }
+    },
     "logging": {
         "level": "INFO",
         "handlers": ["file", "console", "email"],

@@ -70,8 +70,7 @@ $.get('stats', [], loadStatsFromJson, 'json')
 global.map = L.map('map', {worldCopyJump:true}).setView([45.505, -73.0], 5)
 # create a tile layer sourced from mapbox
 L.tileLayer('https://{s}.tiles.mapbox.com/v4/simlmx.3899a192/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg').addTo(global.map)
-# FIXME put the keys from mapbox in the config and delete those keys...
-#
+
 
 global.month = (new Date()).getMonth()
 $('#month').text(MONTHNAMES[global.month])

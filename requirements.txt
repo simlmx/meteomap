@@ -13,6 +13,7 @@
 # wikipedia
 # requests
 # -e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python-Levenshtein
+# numpy
 
 # pip freeze output
 -e . # this library (meteomap)
@@ -34,4 +35,5 @@ pyparsing==2.0.3
 rdflib==4.2.0
 requests==2.5.3
 wikipedia==1.4.0
--e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python_Levenshtein-origin/master
+-e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python_Levenshtein
+numpy==1.10.4

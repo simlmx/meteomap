@@ -1,7 +1,20 @@
+description
+===========
+
+Website displaying weather data for a few thousand cities on an interactive
+map. The data is taken from Wikipedia. You can see the current version here:
+http://meteomap-simlmx.rhcloud.com/
+
+
 prerequisites
 =============
 
-postgresql database running
+- install a few libraries
+    apt-get install postgresql libpython3-dev libncurses5-dev postgis
+
+(there are clearly some missing)
+
+- have a postgresql database running
 
 
 install
