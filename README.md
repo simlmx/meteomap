@@ -9,13 +9,13 @@ http://meteomap-simlmx.rhcloud.com/
 prerequisites
 =============
 
-- install a few libraries
+install a few libraries
 
     apt-get install postgresql libpython3-dev libncurses5-dev postgis
 
 (there are clearly some missing)
 
-- have a postgresql database running
+have a postgresql database running
 
 
 install
