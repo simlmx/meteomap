@@ -10,6 +10,7 @@ prerequisites
 =============
 
 - install a few libraries
+
     apt-get install postgresql libpython3-dev libncurses5-dev postgis
 
 (there are clearly some missing)
