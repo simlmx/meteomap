@@ -7,6 +7,8 @@ http://meteomap-simlmx.rhcloud.com/
 
 Originally the goal was to have a more efficient way to choose my travel itineraries, weather along the way being one of the main concerns.
 
+So far optimized for desktop... and probably not for all browsers.
+
 prerequisites
 =============
 
