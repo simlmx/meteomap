@@ -4,7 +4,7 @@ description
 Website displaying weather data for a few thousand cities on an interactive
 map. The data is taken from Wikipedia. You can see the current version here:
 http://meteomap-simlmx.rhcloud.com/
-
+Originaly the goal was to have a more efficient way to choose my travel itineraries, weather along the way being one of the main concerns.
 
 prerequisites
 =============
