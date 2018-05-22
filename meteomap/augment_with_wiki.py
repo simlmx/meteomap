@@ -78,7 +78,7 @@ def parse_climate_table(html):
         {'average temp C (F)' : ['12 (13)', ..., '12 (13)']
          ... }
     """
-    bs = BeautifulSoup(html)
+    bs = BeautifulSoup(html, 'html.parser')
     months = bs.find_all('th', text=re.compile(r'[\s]*Month[\s]*'))
 
     # if there is nothing, it means there were no climate table in that html
@@ -286,11 +286,13 @@ if __name__ == '__main__':
             del new_data[city_id]
 
         if not got_wiki:
-            logger.info('didn\'t find a page for city %s', city.name)
+            logger.info('did not find page for city %s, %s, %s'
+                        % (city.name, city.region, city.country))
             nb_no_wiki += 1
             continue
         elif not got_climate:
-            logger.info('didn\'t find a climate table for city %s', city.name)
+            logger.info('did not find climate table for city %s, %s, %s'
+                        % (city.name, city.region, city.country))
             nb_no_climate += 1
             continue
 
@@ -319,6 +321,8 @@ if __name__ == '__main__':
         city.coords = coords
 
         new_data[city_id] = city
+
+        logger.info('* Got data for city %s, %s, %s' % (city.name, city.region, city.country))
 
     logger.info('started with %i cities', nb_cities_at_start)
     logger.info('went threw %i new cities (%i were skipped because we already'

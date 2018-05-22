@@ -9,56 +9,51 @@ Originally the goal was to have a more efficient way to choose my travel itinera
 
 So far optimized for desktop... and probably not for all browsers.
 
+
 prerequisites
 =============
 
-install a few libraries
-
-    apt-get install postgresql libpython3-dev libncurses5-dev postgis
-
-(there are clearly some missing)
-
-have a postgresql database running
+`docker`
 
 
-install
-=======
+configuration
+=============
 
-    # get the code
-    clone meteomap
-    cd meteomap
-
-    # create a virtual environment
-    virtualenv -p python3 mm-ve
-    source mm-ve/bin/activate
-
-    # install the python requirements
-    pip install -r requirements.txt
-    
-    # configure
-    cp config_sample.json config.json # and edit config.json
+    cp config_sample.json config.json
+    # and edit the file if needed
 
 
 database creation and population
 ================================
 
+    # create a folder where we will put the downloadedfiles
+    mkdir download
+
     # fetch the list of cities and associated files from geonames.org
-    wget "http://download.geonames.org/export/dump/admin1CodesASCII.txt" -P tmp
-    wget "http://download.geonames.org/export/dump/allCountries.zip" -P tmp
-    wget "http://download.geonames.org/export/dump/countryInfo.txt" -P tmp
+    wget "http://download.geonames.org/export/dump/admin1CodesASCII.txt" -P downloads
+    wget "http://download.geonames.org/export/dump/allCountries.zip" -P downloads
+    wget "http://download.geonames.org/export/dump/countryInfo.txt" -P downloads
+
+    # Then go inside the container to do the next commands
+    make run_dev
 
     # parse the city files
-    python meteomap/parse_geonames.py --admin1codes-file tmp/admin1CodesASCII.txt \
-    --country-infos-file tmp/countryInfo.txt tmp/allCountries.zip tmp/parsed_geonames_world.gz
+    python meteomap/parse_geonames.py --admin1codes-file downloads/admin1CodesASCII.txt \
+    --country-infos-file downloads/countryInfo.txt downloads/allCountries.zip downloads/parsed_geonames_world.gz
 
     # add wiki data
-    python meteomap/augment_with_wiki.py tmp/parsed_geonames_world.gz tmp/augmented_geonames_world.gz
+    python meteomap/augment_with_wiki.py downloads/parsed_geonames_world.gz downloads/augmented_geonames_world.gz
 
     # create the database
     python meteomap/create_database.py
 
     # insert the data in the database
-    python meteomap/load_database.py tmp/augmented_geonames_world.gz
+    python meteomap/load_database.py downloads/augmented_geonames_world.gz
 
+
+Running the website
+==================
+
+    make run
     # start the site
     python meteomap/sites.py

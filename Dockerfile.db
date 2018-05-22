@@ -1,0 +1,5 @@
+FROM postgres:9.5
+
+RUN apt update && \
+    apt install sudo && \
+    apt install -y postgresql-9.5-postgis-2.3

@@ -1,4 +1,4 @@
-# actual libraries we need (I think...)
+# actual libraries we need
 # 
 # -e . # this library (meteomap)
 # GeoAlchemy2
@@ -14,6 +14,8 @@
 # requests
 # -e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python-Levenshtein
 # numpy
+# gunicorn
+# beautifulsoup4
 
 # pip freeze output
 -e . # this library (meteomap)
@@ -24,7 +26,7 @@ MarkupSafe==0.23
 SPARQLWrapper==1.6.4
 SQLAlchemy==0.9.8
 Werkzeug==0.10.4
-beautifulsoup4==4.3.2
+beautifulsoup4==4.4.0
 gnureadline==6.3.3
 ipython==2.4.1
 isodate==0.5.1
@@ -37,3 +39,4 @@ requests==2.5.3
 wikipedia==1.4.0
 -e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python_Levenshtein
 numpy==1.10.4
+gunicorn==19.8.0

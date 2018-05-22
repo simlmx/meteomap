@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    volumes:
+        - ./meteomap:/meteomap/meteomap
+    # ports:
+    # - "5000:5000"
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+      # volumnes:
+      #     `/var/lib/postgresql/data
+      #
+
+volumes:
+  meteomap:

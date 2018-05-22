@@ -3,9 +3,12 @@
 *.pyc
 
 /config.json
-/tmp
+/downloads
 /mm-ve
 LOG.md
+/ve
+/.built_db
+/.built_web
 
 .ropeproject
 /meteomap.egg-info
