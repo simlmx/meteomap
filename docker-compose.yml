@@ -7,15 +7,19 @@ services:
       dockerfile: Dockerfile.web
     volumes:
         - ./meteomap:/meteomap/meteomap
+        - ./downloads:/meteomap/downloads
+        - ./logs:/meteomap/logs
+        - ./config.json:/meteomap/config.json:ro
     # ports:
     # - "5000:5000"
   db:
     build:
       context: .
       dockerfile: Dockerfile.db
-      # volumnes:
-      #     `/var/lib/postgresql/data
-      #
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "8084:5432"
 
 volumes:
   meteomap:

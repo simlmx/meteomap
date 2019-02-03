@@ -4,11 +4,8 @@
 
 /config.json
 /downloads
-/mm-ve
 LOG.md
-/ve
-/.built_db
-/.built_web
+/postgres-data
 
 .ropeproject
 /meteomap.egg-info

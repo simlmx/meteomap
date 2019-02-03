@@ -4,10 +4,14 @@ WORKDIR /meteomap
 
 ADD requirements.txt requirements.txt
 ADD setup.py setup.py
-ADD config.json config.json
-ADD meteomap meteomap
+# We need a directory to "-e"-install `meteomap`
+RUN mkdir meteomap
 RUN pip install -r requirements.txt
-RUN rm -rf meteomap
+
+ADD config.json config.json
+# Since we install the package with the -e option, we can actually add the code
+# later. This way we don't need to rebuild everytime the code changes.
+ADD meteomap meteomap
 
 CMD ["gunicorn","meteomap.site:app"]
 # CMD ["python","meteomap/site.py"]

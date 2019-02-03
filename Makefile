@@ -2,44 +2,33 @@
 # building
 #
 
-.PHONY: build build_web build_db \
-	run_db run_web run
+.PHONY: build build_web build_db run_db run_web run run_exec_web
+
+USER = --user `id -u`:`id -g`
 
 
 build: docker-compose.yml Dockerfile.web Dockerfile.db requirements.txt
 	docker-compose build
-	touch .built_web
-	touch .built_db
 
-build_web: .built_web
-
-build_db: .built_db
-
-.built_web: docker-compose.yml Dockerfile.web requirements.txt
+build_web:
 	docker-compose build web
-	touch .built_web
 
-.built_db: docker-compose.yml Dockerfile.db
+build_db:
 	docker-compose build db
-	touch .built_db
 
 #
 # running
 # 
 
 # run the postgresql docker image
-run_db: .built_db
+run_db:
 	docker-compose run db
 
-run_web: .built_web
-	docker-compose run web
+run_web:
+	docker-compose run web $(USER)
 
-run: .built_db .built_web
+run:
 	docker-compose up
 
-run_dev: .built_web
-	docker-compose run \
-		--volume `pwd`/downloads:/meteomap/downloads \
-		--volume `pwd`/logs:/meteomap/logs \
-		--user `id -u`:`id -g` \
-		web bash
+run_exec_web:
+	docker-compose exec $(USER) web bash
