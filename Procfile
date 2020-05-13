@@ -1,1 +1,1 @@
-web: python meteomap/site.py
+web: gunicorn meteomap.site:app
