@@ -2,9 +2,8 @@
 *.swp
 *.pyc
 
-/config.json
+/.env
 /downloads
-LOG.md
 /postgres-data
 
 .ropeproject

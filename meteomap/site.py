@@ -6,7 +6,7 @@ from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from geoalchemy2 import Geometry
 from meteomap.tables import City, MonthlyStat, Stat
 from meteomap.utils import session_scope, configure_logging
-from meteomap.settings import config
+from meteomap.settings import MAX_CITIES
 
 
 app = Flask(__name__)
@@ -28,10 +28,9 @@ def data_route():
     north = request.args.get('n')
     south = request.args.get('s')
     month = request.args.get('m')
-    nb = int(request.args.get('nb', config['max_nb_cities_at_once']))
-    if nb > config['max_nb_cities_at_once']:
-        nb = config['max_nb_cities_at_once']
-
+    nb = int(request.args.get('nb', MAX_CITIES))
+    if nb > MAX_CITIES:
+        nb = MAX_CITIES
     if west is None or east is None or south is None or north is None:
         return 'TODO 404'
 

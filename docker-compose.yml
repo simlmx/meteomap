@@ -8,6 +8,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+    env_file:
+      .env
     volumes:
         - ./meteomap:/meteomap/meteomap
         - ./downloads:/meteomap/downloads
@@ -15,6 +17,7 @@ services:
         - ./config.json:/meteomap/config.json:ro
     ports:
       - "8000:8000"
+      # - "5000:5000"
   db:
     build:
       context: .

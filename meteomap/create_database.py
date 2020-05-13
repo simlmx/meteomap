@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import ProgrammingError
 from meteomap.utils import session_scope, are_you_sure, configure_logging
 from meteomap.tables import Stat, Base
-from meteomap.settings import DATABASE_STR_WITUOUT_TABLE, DATABASE_STR, DATABASE
+from meteomap.settings import DATABASE_STR_WITHOUT_TABLE, DATABASE_STR, DATABASE
 
 
 STATS = [

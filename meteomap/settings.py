@@ -1,27 +1,30 @@
 import os
 import json
 
-METEOMAP_CONFIG_PATH = os.environ.get('METEOMAP_CONFIG_PATH', 'config.json')
 
-# read some infos for our config
-config = json.load(open(METEOMAP_CONFIG_PATH))
+DATABASE_STR_WITHOUT_TABLE = '{}://{}:{}@{}:{}'.format(
+    'postgresql+psycopg2',
+    os.environ['METEOMAP_DB_USER'],
+    os.environ['METEOMAP_DB_PASSWORD'],
+    os.environ['METEOMAP_DB_HOST'],
+    os.environ['METEOMAP_DB_PORT'],
+)
 
-DATABASE = {
-    'type': 'postgresql+psycopg2',
-    'name': config['db']['name'],
-    'user': config['db']['user'],
-    'password': config['db']['password'],
-    'host': config['db']['host'],
-    'port': config['db']['port'],
+DATABASE_STR = '{}/{}'.format(
+    DATABASE_STR_WITHOUT_TABLE,
+    os.environ['METEOMAP_DB_NAME'],
+)
+
+MAX_CITIES = int(os.environ['METEOMAP_MAX_CITIES'])
+
+# TODO This is a bit legacy.
+LOGGING_CONFIG = {
+    "level": "INFO",
+    "handlers": ["file", "console"],
+    "email": {
+        "server": "your email server",
+        "port": 1234,
+        "address": "your email",
+        "pass": "your email password"
+    }
 }
-
-DATABASE_STR_WITUOUT_TABLE = '{}://{}:{}@{}{}'.format(
-    DATABASE['type'],
-    DATABASE['user'],
-    DATABASE['password'],
-    DATABASE['host'],
-    ':' + DATABASE['port'] if DATABASE['port'] != '' else '')
-
-DATABASE_STR = '{}/{}'.format(DATABASE_STR_WITUOUT_TABLE, DATABASE['name'])
-
-LOGGING_CONFIG = config['logging']
