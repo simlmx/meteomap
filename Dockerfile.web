@@ -12,5 +12,3 @@ ADD config.json config.json
 # Since we install the package with the -e option, we can actually add the code
 # later. This way we don't need to rebuild everytime the code changes.
 ADD meteomap meteomap
-
-CMD ["gunicorn","meteomap.site:app", "-b", "0.0.0.0"]

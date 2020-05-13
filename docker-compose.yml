@@ -2,6 +2,9 @@ version: '3'
 
 services:
   web:
+    command:
+      gunicorn meteomap.site:app -b 0.0.0.0
+      # python meteomap/site.py --debug
     build:
       context: .
       dockerfile: Dockerfile.web

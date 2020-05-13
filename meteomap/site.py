@@ -54,6 +54,7 @@ def data_route():
             func.ST_X(cast(sq.c.location, Geometry())),
             sq.c.population, MonthlyStat.month,
             MonthlyStat.value, Stat.code, sq.c.country, sq.c.source) \
+            .select_from(sq) \
             .join(MonthlyStat) \
             .join(Stat) \
             .filter(Stat.code.in_(['avgHigh', 'avgLow', 'precipitation',
@@ -66,7 +67,7 @@ def data_route():
         def default():
             return {'month_stats': defaultdict(dict)}
         cities = defaultdict(default)
-        # print(query)
+
         # format what is returned from the query
         for row in query:
             id = row[0]
@@ -85,8 +86,6 @@ def data_route():
                 if old in c['month_stats'] and new not in c['month_stats']:
                     c['month_stats'][new] = c['month_stats'].pop(old)
 
-        # from pprint import pprint
-        # pprint(cities)
     return json.dumps(cities)
 
 
@@ -137,4 +136,4 @@ if __name__ == '__main__':
                         help='Run the server in debug mode')
     args = parser.parse_args()
     configure_logging()
-    app.run(debug=args.debug)
+    app.run(debug=args.debug, host='0.0.0.0')
