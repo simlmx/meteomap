@@ -54,7 +54,7 @@ if __name__ == '__main__':
         try:
             session.execute('create database ' + db_name)
         except ProgrammingError:
-            # the database already exists
+            the database already exists
             if args.force_drop or are_you_sure(
                     'The database "{}" already exists, do you wish to DROP it?'
                     .format(db_name)):
@@ -68,6 +68,8 @@ if __name__ == '__main__':
         session.execute('create extension postgis')
         session.execute('create extension unaccent')
 
+    # TODO: This should go in a separate scripts: in prod, we create the
+    # database and add the extensions separately.
     # create all the tables
     engine = create_engine(DATABASE_STR)
     Base.metadata.create_all(engine)

@@ -10,8 +10,8 @@ services:
         - ./downloads:/meteomap/downloads
         - ./logs:/meteomap/logs
         - ./config.json:/meteomap/config.json:ro
-    # ports:
-    # - "5000:5000"
+    ports:
+      - "8000:8000"
   db:
     build:
       context: .

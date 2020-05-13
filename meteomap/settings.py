@@ -1,7 +1,10 @@
+import os
 import json
 
+METEOMAP_CONFIG_PATH = os.environ.get('METEOMAP_CONFIG_PATH', 'config.json')
+
 # read some infos for our config
-config = json.load(open('config.json'))
+config = json.load(open(METEOMAP_CONFIG_PATH))
 
 DATABASE = {
     'type': 'postgresql+psycopg2',

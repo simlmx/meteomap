@@ -13,5 +13,4 @@ ADD config.json config.json
 # later. This way we don't need to rebuild everytime the code changes.
 ADD meteomap meteomap
 
-CMD ["gunicorn","meteomap.site:app"]
-# CMD ["python","meteomap/site.py"]
+CMD ["gunicorn","meteomap.site:app", "-b", "0.0.0.0"]

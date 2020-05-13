@@ -34,8 +34,9 @@ database creation and population
     wget "http://download.geonames.org/export/dump/allCountries.zip" -P downloads
     wget "http://download.geonames.org/export/dump/countryInfo.txt" -P downloads
 
-    # Then go inside the container to do the next commands
-    make run_dev
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.tx
 
     # parse the city files
     python meteomap/parse_geonames.py --admin1codes-file downloads/admin1CodesASCII.txt \
@@ -55,5 +56,11 @@ Running the website
 ==================
 
     make run
-    # start the site
-    python meteomap/sites.py
+    # Go to 0.0.0.0:8000
+
+
+Deploy in prod
+===============
+
+* `pg_dump` the database locally and then push it to the prod database.
+* The heroku deployment is in the `heroku` branch
