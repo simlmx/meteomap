@@ -1,29 +1,28 @@
-description
+Description
 ===========
 
 Website displaying weather data for a few thousand cities on an interactive
-map. The data is taken from Wikipedia. You can see the current version here:
-http://meteomap-simlmx.rhcloud.com/
+map. The data is taken from Wikipedia.
 
-Originally the goal was to have a more efficient way to choose my travel itineraries, weather along the way being one of the main concerns.
+You can find a [deployed version here][site].
 
-So far optimized for desktop... and probably not for all browsers.
+The original goal was to have a more efficient way to look at weather tables from Wikipedia to choose travel itineraries.
 
 
-prerequisites
+Prerequisites
 =============
 
 `docker`
 
 
-configuration
+Configuration
 =============
 
     cp config_sample.json config.json
     # and edit the file if needed
 
 
-database creation and population
+Database creation and population
 ================================
 
     # create a folder where we will put the downloadedfiles
@@ -59,8 +58,11 @@ Running the website
     # Go to 0.0.0.0:8000
 
 
-Deploy in prod
+Deployment to prod
 ===============
 
 * `pg_dump` the database locally and then push it to the prod database.
 * The heroku deployment is in the `heroku` branch
+
+
+[site]: http://meteomap.herokuapp.com/
