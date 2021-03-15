@@ -4,7 +4,7 @@ Description
 Website displaying weather data for a few thousand cities on an interactive
 map. The data is taken from Wikipedia.
 
-You can find a [deployed version here][site].
+~~You can find a [deployed version here][site].~~
 
 The original goal was to have a more efficient way to look at weather tables from Wikipedia to choose travel itineraries.
 
