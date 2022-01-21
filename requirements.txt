@@ -29,7 +29,7 @@ gnureadline==6.3.8
 gunicorn==19.8.1
 html5lib==1.0b8
 idna==2.9
-ipython==2.4.1
+ipython==7.16.3
 isodate==0.5.4
 itsdangerous==0.24
 Jinja2==2.11.3
