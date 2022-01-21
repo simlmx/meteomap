@@ -35,7 +35,7 @@ itsdangerous==0.24
 Jinja2==2.11.3
 MarkupSafe==0.23
 nose==1.3.7
-numpy==1.18.4
+numpy==1.21.0
 psycopg2==2.8.5
 pyparsing==2.0.7
 -e git://github.com/ztane/python-Levenshtein.git@854e61a05bb8b750e990add96df412cd5448b75e#egg=python_Levenshtein
