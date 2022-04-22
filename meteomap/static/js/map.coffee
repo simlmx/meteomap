@@ -69,7 +69,22 @@ $.get('stats', [], loadStatsFromJson, 'json')
 # create a map in the "map" div, set the view to a given place and zoom
 global.map = L.map('map', {worldCopyJump:true}).setView([45.505, -73.0], 5)
 # create a tile layer sourced from mapbox
-L.tileLayer('https://{s}.tiles.mapbox.com/v4/simlmx.3899a192/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg').addTo(global.map)
+
+# Old version
+# L.tileLayer('https://{s}.tiles.mapbox.com/v4/simlmx.3899a192/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg').addTo(global.map)
+# New version
+
+# accessToken = 'pk.eyJ1Ijoic2ltbG14IiwiYSI6IjhiOGM5MTQwNzcwYjI2N2I2OWZmZDJmZDEzZmM1MjRmIn0.9gqLDwhf2tDseRNXlFTGRg';
+accessToken = 'pk.eyJ1Ijoic2ltbG14IiwiYSI6ImNpajdwYzhucDAwMDN1bGtuaGV4dGFmNnEifQ.ut4yzDxEaB2izwwNDuoapw';
+
+L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>',
+    tileSize: 512,
+    maxZoom: 18,
+    zoomOffset: -1,
+    id: 'mapbox/light-v10',
+    accessToken,
+}).addTo(global.map);
 
 
 global.month = (new Date()).getMonth()
